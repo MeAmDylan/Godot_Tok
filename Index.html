@@ -1,0 +1,1398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2E3440">
+<link rel="manifest" href='data:application/manifest+json,{"name":"GodotTok","short_name":"GodotTok","display":"standalone","background_color":"%232E3440","theme_color":"%232E3440","start_url":".","icons":[{"src":"icon.png","sizes":"192x192","type":"image/png"},{"src":"icon.png","sizes":"512x512","type":"image/png"}]}'>
+<link rel="apple-touch-icon" href="icon.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232E3440'/%3E%3Ccircle cx='16' cy='14' r='10' fill='%23478CBF'/%3E%3Ccircle cx='11' cy='11' r='4' fill='white'/%3E%3Ccircle cx='21' cy='11' r='4' fill='white'/%3E%3Ccircle cx='12.5' cy='12.5' r='1.8' fill='%23414042'/%3E%3Ccircle cx='19.5' cy='12.5' r='1.8' fill='%23414042'/%3E%3Crect x='14.2' y='15' width='3.6' height='6' rx='1.2' fill='%23414042'/%3E%3Crect x='8.5' y='20.5' width='15' height='3.5' rx='1.8' fill='%23414042'/%3E%3C/svg%3E">
+<title>GodotTok</title>
+<style>
+:root{
+  --n0:#2E3440;--n1:#3B4252;--n2:#434C5E;--n3:#4C566A;
+  --n4:#D8DEE9;--n5:#E5E9F0;--n6:#ECEFF4;
+  --f0:#8FBCBB;--f1:#88C0D0;--f2:#81A1C1;--f3:#5E81AC;
+  --red:#BF616A;--ora:#D08770;--yel:#EBCB8B;--grn:#A3BE8C;--pur:#B48EAD;
+  --bg:#242933;--bar:56px;
+  --mono:ui-monospace,'Cascadia Code','JetBrains Mono','Fira Code',Menlo,monospace;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{background:var(--bg);color:var(--n5);font-family:var(--sans);height:100dvh;overflow:hidden;-webkit-tap-highlight-color:transparent}
+button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer}
+input,textarea,select{font-family:inherit}
+a{color:var(--f1)}
+svg{display:block}
+
+/* ── layout ── */
+#app{display:flex;flex-direction:column;height:100%}
+main{flex:1;min-height:0;position:relative;overflow:hidden}
+.view{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+.view.active{display:flex}
+
+/* ── tabbar ── */
+#tabbar{
+  height:var(--bar);flex:none;display:flex;align-items:stretch;
+  background:rgba(46,52,64,.95);border-top:1px solid var(--n2);
+  backdrop-filter:blur(8px);z-index:50;
+}
+#tabbar button{
+  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;color:var(--n3);font-size:10px;font-family:var(--mono);
+  border-top:2px solid transparent;transition:color .15s;
+}
+#tabbar button.active{color:var(--f1);border-top-color:var(--f1)}
+#tabbar button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ── feed ── */
+#view-feed{background:#000}
+.feed-wrap{flex:1;min-height:0;display:flex;justify-content:center;background:var(--bg);position:relative}
+#feed{height:100%;width:100%;max-width:520px;background:#000;overflow-y:scroll;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none}
+#feed::-webkit-scrollbar{display:none}
+.card{height:100%;width:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;overflow:hidden;background:#000;flex-shrink:0}
+.card iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.card .scrim{position:absolute;left:0;right:0;bottom:0;height:42%;background:linear-gradient(transparent,rgba(30,36,50,.96));pointer-events:none}
+.card .meta{position:absolute;left:12px;bottom:46px;right:80px;pointer-events:none}
+.meta .mcr{font-family:var(--mono);font-size:11px;color:var(--f1);margin-bottom:3px;display:flex;align-items:center;gap:5px}
+.meta .mtitle{font-weight:600;font-size:14px;line-height:1.35;color:var(--n6);margin-bottom:5px}
+.meta .mtip{font-size:11.5px;color:var(--yel);line-height:1.45;border-left:2px solid rgba(235,203,139,.4);padding-left:7px}
+.badge{display:inline-block;font-family:var(--mono);font-size:9px;letter-spacing:.4px;padding:2px 6px;border-radius:3px}
+.badge.yt{background:var(--red);color:var(--n6)}
+.badge.tt{background:var(--pur);color:var(--n6)}
+.badge.long{background:var(--f3);color:var(--n6)}
+
+/* tap layer: covers video area minus bottom scrubber and right rail */
+.taplayer{position:absolute;top:0;left:0;right:72px;bottom:28px;touch-action:pan-y;user-select:none;-webkit-user-select:none;z-index:10}
+
+/* pause/play indicator */
+.center-state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .15s}
+.card.paused .center-state{opacity:1}
+.center-state svg{width:60px;height:60px;fill:rgba(236,239,244,.8);filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
+.boost-badge{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);font-family:var(--mono);font-weight:700;font-size:16px;color:var(--n0);background:var(--yel);padding:4px 14px;border-radius:20px;opacity:0;transition:opacity .1s;pointer-events:none;z-index:12}
+.card.boosting .boost-badge{opacity:1}
+
+/* seek ripple */
+.seek-hint{position:absolute;top:50%;transform:translateY(-50%);pointer-events:none;opacity:0;transition:opacity .15s;z-index:15;text-align:center;width:80px}
+.seek-hint.sl{left:14px}
+.seek-hint.sr{right:86px}
+.seek-hint.show{opacity:1;animation:seek-pop .5s ease forwards}
+@keyframes seek-pop{0%{opacity:0;transform:translateY(-50%) scale(.7)}20%{opacity:1;transform:translateY(-50%) scale(1.1)}80%{opacity:1;transform:translateY(-50%) scale(1)}100%{opacity:0;transform:translateY(-50%) scale(1)}}
+.seek-hint svg{width:52px;height:52px;fill:rgba(255,255,255,.75)}
+.seek-hint span{display:block;font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.9);margin-top:-4px}
+
+/* scrubber */
+.scrubber{position:absolute;left:0;right:72px;bottom:0;height:28px;z-index:20;cursor:pointer;display:flex;align-items:flex-end}
+.scrub-track{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(255,255,255,.2);border-radius:2px}
+.scrub-fill{position:absolute;left:0;bottom:0;height:3px;background:var(--f1);border-radius:2px;width:0%;pointer-events:none;transition:width .2s linear}
+.scrub-hit{position:absolute;inset:0}
+
+/* rail */
+.rail{position:absolute;right:8px;bottom:32px;display:flex;flex-direction:column;gap:14px;align-items:center;z-index:20}
+.rail button{width:44px;height:44px;border-radius:50%;background:rgba(46,52,64,.72);display:flex;align-items:center;justify-content:center;color:var(--n5)}
+.rail button svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rail button.on{color:var(--f0)}
+.rail button.on svg{fill:var(--f0)}
+
+/* feed top */
+.feed-top{position:absolute;top:0;left:0;right:0;z-index:6;display:flex;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(rgba(30,36,50,.8),transparent);pointer-events:none}
+.feed-top>*{pointer-events:auto}
+.logo{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:14px;font-weight:700;color:var(--n6)}
+.logo img{width:26px;height:26px;display:block}
+.logo span{color:var(--f1)}
+.spacer{flex:1}
+.pill{font-family:var(--mono);font-size:11px;padding:5px 10px;border-radius:16px;border:1px solid var(--n3);color:var(--n4);background:rgba(46,52,64,.6)}
+.pill.on{border-color:var(--f1);color:var(--f1)}
+
+/* tip cards */
+.card.tip{background:var(--n0);display:flex;align-items:center;justify-content:center;padding:24px}
+.tipbox{max-width:420px;width:100%}
+.tipbox .tfile{font-family:var(--mono);font-size:11px;color:var(--n3);border-bottom:1px solid var(--n2);padding-bottom:8px;margin-bottom:14px;display:flex;justify-content:space-between}
+.tipbox .tfile b{color:var(--grn);font-weight:400}
+.tipbox h2{font-size:18px;color:var(--n6);line-height:1.3;margin-bottom:10px}
+.tipbox h2::before{content:"# ";color:var(--f1);font-family:var(--mono)}
+.tipbox p{font-size:14px;line-height:1.65;color:var(--n4)}
+.tipbox code{font-family:var(--mono);font-size:12px;color:var(--f0);background:var(--n1);padding:1px 5px;border-radius:4px}
+
+/* hints */
+#hints{position:absolute;inset:0;z-index:40;background:rgba(36,41,51,.93);display:none;flex-direction:column;align-items:center;justify-content:center;gap:12px;font-family:var(--mono);font-size:13px;color:var(--n4);text-align:center;padding:24px}
+#hints b{color:var(--f1)}
+#hintsOk{margin-top:12px;background:var(--f3);color:var(--n6);padding:10px 26px;border-radius:8px;font-family:var(--mono);font-size:13px}
+#hints.show{display:flex}
+
+/* pagebar */
+.pagebar{flex:none;display:flex;align-items:center;gap:6px;padding:9px 10px;background:var(--n0);border-bottom:1px solid var(--n2);overflow-x:auto;scrollbar-width:none;min-height:44px}
+.pagebar::-webkit-scrollbar{display:none}
+.ptitle{font-family:var(--mono);font-size:13px;color:var(--n6);font-weight:700;white-space:nowrap}
+.chip{font-family:var(--mono);font-size:11px;white-space:nowrap;padding:5px 10px;border-radius:6px;background:var(--n1);color:var(--n4);border:1px solid var(--n2);transition:all .15s}
+.chip:hover,.chip.sel{border-color:var(--f1);color:var(--f1)}
+.extbtn{margin-left:auto;display:flex;align-items:center;gap:4px;white-space:nowrap;font-family:var(--mono);font-size:11px;color:var(--f1);border:1px solid var(--f3);padding:5px 10px;border-radius:6px;flex-shrink:0}
+.framehost{flex:1;min-height:0;background:var(--n6)}
+.framehost iframe{width:100%;height:100%;border:0}
+.framenote{flex:none;font-family:var(--mono);font-size:10px;color:var(--n3);padding:5px 12px;background:var(--n0);border-top:1px solid var(--n2)}
+
+/* subtabs */
+.stabs{display:flex;gap:4px;padding:7px 10px;background:var(--n0);border-bottom:1px solid var(--n2);flex:none}
+.stab{font-family:var(--mono);font-size:11px;padding:5px 13px;border-radius:6px;color:var(--n3);border:1px solid transparent;transition:all .15s}
+.stab.active{background:var(--n1);color:var(--f1);border-color:var(--n2)}
+.subview{display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden}
+.subview.active{display:flex}
+
+/* scrollpage */
+.scrollpage{flex:1;overflow-y:auto;padding:14px;max-width:680px;width:100%;margin:0 auto}
+.pagehead{font-family:var(--mono);font-size:15px;color:var(--n6);margin-bottom:3px}
+.pagehead::before{content:"func ";color:var(--f2)}
+.pagehead::after{content:"():";color:var(--n3)}
+.pagesub{font-size:13px;color:var(--n3);margin-bottom:16px}
+
+/* search */
+.search-top{flex:none;padding:10px 12px;background:var(--n0);border-bottom:1px solid var(--n2)}
+.search-top input{width:100%;background:var(--n1);border:1px solid var(--n2);border-radius:8px;color:var(--n5);padding:10px 14px;font-size:14px;outline:none}
+.search-top input:focus{border-color:var(--f1)}
+.search-results{flex:1;overflow-y:auto;padding:0}
+.search-section{font-family:var(--mono);font-size:10px;color:var(--n3);padding:10px 12px 4px;letter-spacing:.5px;text-transform:uppercase}
+.search-vid{display:flex;gap:10px;align-items:center;padding:8px 12px;border-bottom:1px solid var(--n2);cursor:pointer}
+.search-vid:active{background:var(--n1)}
+.search-vid img{width:88px;height:54px;object-fit:cover;border-radius:5px;flex-shrink:0;background:var(--n2)}
+.search-vid .svm{flex:1;min-width:0}
+.search-vid .svm-t{font-size:13px;color:var(--n5);font-weight:500;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
+.search-vid .svm-s{font-family:var(--mono);font-size:10px;color:var(--n3);margin-top:3px}
+.doclinks{display:flex;flex-wrap:wrap;gap:7px;padding:10px 12px}
+.doclinkbtn{font-family:var(--mono);font-size:11px;padding:7px 12px;border-radius:7px;background:var(--n1);color:var(--f1);border:1px solid var(--n2)}
+.search-empty{padding:32px 16px;text-align:center;font-family:var(--mono);font-size:13px;color:var(--n3)}
+
+/* flashcards */
+.fc-mode-bar{flex:none;display:flex;gap:5px;padding:7px 10px;background:var(--n0);border-bottom:1px solid var(--n2)}
+.fc-mode-bar button{font-family:var(--mono);font-size:11px;padding:5px 12px;border-radius:6px;color:var(--n3);border:1px solid var(--n2);background:transparent;transition:all .15s}
+.fc-mode-bar button.active{background:var(--n1);color:var(--f1);border-color:var(--f3)}
+.fc-study-wrap{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px;gap:8px;overflow:hidden}
+.fc-card-outer{flex:1;perspective:900px;cursor:pointer;max-height:340px}
+.fc-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform .38s}
+.fc-card-outer.flipped .fc-inner{transform:rotateY(180deg)}
+.fc-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:22px;text-align:center}
+.fc-face.front{background:var(--n1);border:1px solid var(--n2)}
+.fc-face.back{transform:rotateY(180deg);background:var(--n0);border:1px solid var(--f3)}
+.fc-label{font-family:var(--mono);font-size:9px;letter-spacing:.7px;color:var(--n3);margin-bottom:10px;text-transform:uppercase}
+.fc-q{font-size:15px;color:var(--n5);line-height:1.5}
+.fc-a{font-size:13.5px;color:var(--n5);line-height:1.55}
+.fc-code{font-family:var(--mono);font-size:12px;background:var(--bg);color:var(--f0);padding:8px 12px;border-radius:6px;margin-top:10px;text-align:left;white-space:pre-wrap;line-height:1.5;width:100%}
+.fc-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.fc-actions button{font-family:var(--mono);font-size:12px;padding:8px 16px;border-radius:8px;border:1px solid var(--n2);flex:1}
+.fc-actions .btn-got{background:var(--grn);color:var(--n0);border:none}
+.fc-actions .btn-skip{background:var(--n2);color:var(--n4)}
+.fc-prog{font-family:var(--mono);font-size:10px;color:var(--n3);text-align:center;flex-shrink:0}
+.fc-list-wrap{flex:1;overflow-y:auto}
+.fc-list-item{display:flex;gap:8px;align-items:flex-start;padding:9px 12px;border-bottom:1px solid var(--n2)}
+.fc-list-item .fq{flex:1;font-size:12.5px;color:var(--n4);line-height:1.4}
+.fc-list-item .fcust{font-family:var(--mono);font-size:9px;color:var(--pur);margin-top:3px}
+.fc-list-item button{color:var(--red);font-size:15px;padding:2px 4px;flex-shrink:0}
+.fc-add-wrap{flex:none;background:var(--n0);border-top:1px solid var(--n2);padding:10px 12px}
+.fc-add-wrap input,.fc-add-wrap textarea{width:100%;background:var(--n1);border:1px solid var(--n2);border-radius:7px;color:var(--n5);padding:8px 10px;font-size:13px;outline:none;margin-bottom:6px;resize:none}
+.fc-add-wrap input:focus,.fc-add-wrap textarea:focus{border-color:var(--f1)}
+.fc-add-wrap button.primary{background:var(--f3);color:var(--n6);border-radius:7px;padding:8px;width:100%;font-family:var(--mono);font-size:12px;font-weight:700}
+
+/* cheatsheet */
+.cheat{flex:1;overflow-y:auto;padding:14px 14px 28px;max-width:680px;width:100%;margin:0 auto}
+.cheat h2{font-family:var(--mono);font-size:12px;color:var(--f1);margin:22px 0 8px;letter-spacing:.4px;display:flex;align-items:center;gap:6px}
+.cheat h2::before{content:"##";color:var(--n3)}
+.cheat table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:12.5px}
+.cheat th{font-family:var(--mono);font-size:9px;color:var(--n3);text-align:left;padding:4px 8px;border-bottom:1px solid var(--n2)}
+.cheat td{padding:5px 8px;border-bottom:1px solid var(--n2);color:var(--n4);vertical-align:top;line-height:1.4}
+.cheat td:first-child{color:var(--f0);font-family:var(--mono);font-size:12px;white-space:nowrap}
+.cheat pre{background:var(--bg);border:1px solid var(--n2);border-radius:7px;padding:10px 12px;margin-bottom:10px;overflow-x:auto;font-family:var(--mono);font-size:12px;line-height:1.6;color:var(--n5)}
+.cheat .ck{color:var(--f2)} .cheat .cf{color:var(--f1)} .cheat .cs{color:var(--grn)} .cheat .cn{color:var(--ora)} .cheat .cm{color:var(--n3)}
+
+/* saved */
+.saveditem{display:flex;gap:10px;background:var(--n0);border:1px solid var(--n2);border-radius:9px;padding:9px;margin-bottom:8px;align-items:center}
+.saveditem .sithumb{width:88px;height:54px;flex-shrink:0;border-radius:5px;background:var(--n1);overflow:hidden;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:10px;color:var(--n3)}
+.saveditem img{width:100%;height:100%;object-fit:cover}
+.saveditem .simeta{flex:1;min-width:0}
+.saveditem .sit{font-size:13px;color:var(--n5);font-weight:500;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
+.saveditem .sis{font-family:var(--mono);font-size:10px;color:var(--n3);margin-top:3px}
+.saveditem .siact{display:flex;flex-direction:column;gap:8px;flex-shrink:0}
+.saveditem .siact button{color:var(--n3)}
+.saveditem .siact button svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.empty-state{font-family:var(--mono);font-size:13px;color:var(--n3);text-align:center;padding:40px 16px;border:1px dashed var(--n2);border-radius:10px;line-height:1.7}
+
+/* add / settings */
+.formcard{background:var(--n0);border:1px solid var(--n2);border-radius:11px;padding:14px;margin-bottom:14px}
+.formcard label{display:block;font-family:var(--mono);font-size:11px;color:var(--f1);margin:10px 0 4px}
+.formcard label:first-child{margin-top:0}
+.formcard input[type=text]{width:100%;background:var(--n1);border:1px solid var(--n2);border-radius:7px;color:var(--n6);padding:9px 11px;font-size:13.5px}
+.formcard input[type=text]:focus{outline:none;border-color:var(--f1)}
+.checkrow{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:13px;color:var(--n4);cursor:pointer}
+.checkrow input{width:16px;height:16px;accent-color:var(--f3)}
+.primary{width:100%;margin-top:14px;background:var(--f3);color:var(--n6);padding:11px;border-radius:8px;font-family:var(--mono);font-size:13px;font-weight:700}
+#addmsg{font-family:var(--mono);font-size:11px;margin-top:8px;min-height:14px}
+#addmsg.ok{color:var(--grn)}#addmsg.err{color:var(--red)}
+details{background:var(--n0);border:1px solid var(--n2);border-radius:10px;margin-bottom:10px}
+details summary{cursor:pointer;list-style:none;padding:12px 14px;font-family:var(--mono);font-size:13px;color:var(--n5)}
+details summary::before{content:"+ ";color:var(--f1)}
+details[open] summary::before{content:"- ";color:var(--red)}
+details .dbody{padding:0 14px 14px;font-size:13px;line-height:1.7;color:var(--n4)}
+details .dbody code{font-family:var(--mono);font-size:12px;color:var(--f0);background:var(--n1);padding:1px 5px;border-radius:4px}
+details .dbody p{margin-bottom:8px}
+.toggle-row{display:flex;align-items:center;gap:12px;padding:11px 0;cursor:pointer;border-bottom:1px solid var(--n2)}
+.toggle-row .trlabel{flex:1}
+.toggle-row .trlabel div:first-child{font-size:13px;color:var(--n4)}
+.toggle-row .trlabel div:last-child{font-family:var(--mono);font-size:11px;color:var(--n3);margin-top:2px}
+.toggle-knob{width:38px;height:22px;border-radius:11px;background:var(--n3);position:relative;transition:background .2s;flex-shrink:0}
+.toggle-knob.on{background:var(--grn)}
+.toggle-knob::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.toggle-knob.on::after{left:18px}
+
+/* modal */
+#modal{position:fixed;inset:0;z-index:100;background:rgba(36,41,51,.96);display:none;flex-direction:column}
+#modal.open{display:flex}
+#modal .mbar{flex:none;display:flex;align-items:center;padding:9px 12px;gap:8px}
+#modal .mtitle{font-family:var(--mono);font-size:12px;color:var(--n5);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#modal .mclose{color:var(--n4);font-family:var(--mono);font-size:12px;border:1px solid var(--n3);padding:5px 12px;border-radius:6px}
+#modal .mhost{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding-bottom:12px}
+#modal iframe{width:100%;max-width:900px;height:100%;border:0;background:#000}
+
+#toast{position:fixed;left:50%;bottom:calc(var(--bar) + 14px);transform:translateX(-50%);background:var(--n1);border:1px solid var(--n3);color:var(--n5);font-family:var(--mono);font-size:12px;padding:8px 16px;border-radius:8px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:120;white-space:nowrap}
+#toast.show{opacity:1}
+
+/* preview */
+.pbanner{position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:200;display:flex;align-items:flex-start;gap:8px;max-width:94vw;background:var(--n1);border:1px solid var(--yel);border-radius:8px;padding:8px 10px;font-family:var(--mono);font-size:11px;color:var(--n5);line-height:1.5}
+.pbanner b{color:var(--yel)}
+.pbanner button{font-size:14px;color:var(--n3);padding:0 2px;flex-shrink:0;margin-top:-1px}
+.fallback{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--n0);padding:20px 20px 110px;text-align:center}
+.fallback img{width:64px;height:64px;opacity:.6}
+.fallback .ft{font-family:var(--mono);font-size:13px;color:var(--n4)}
+.fallback .fs{font-size:12px;color:var(--n3);max-width:280px;line-height:1.6}
+.fallback .fb{font-family:var(--mono);font-size:12px;background:var(--f3);color:var(--n6);padding:8px 16px;border-radius:7px}
+.pagefall{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:20px}
+.pagefall img{width:72px;height:72px;opacity:.6;margin-bottom:4px}
+.pagefall .ft{font-family:var(--mono);font-size:13px;color:var(--n4)}
+.pagefall .fs{font-size:12.5px;color:var(--n3);max-width:300px;line-height:1.6}
+.pagefall .fb{font-family:var(--mono);font-size:12px;background:var(--f3);color:var(--n6);padding:9px 18px;border-radius:8px;margin-top:4px}
+
+/* desktop */
+@media(min-width:900px){
+  #app{flex-direction:row-reverse}
+  #tabbar{flex-direction:column;height:auto;width:72px;border-top:0;border-right:1px solid var(--n2);justify-content:flex-start;padding-top:12px;gap:4px}
+  #tabbar button{flex:0 0 58px;font-size:9px}
+  #toast{bottom:18px}
+  .feed-wrap{background:var(--bg)}
+  #feed{border-left:1px solid var(--n2);border-right:1px solid var(--n2)}
+}
+</style>
+</head><body>
+<svg style="display:none" aria-hidden="true"><defs>
+<symbol id="ic-play" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"/></symbol>
+<symbol id="ic-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+<symbol id="ic-learn" viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/></symbol>
+<symbol id="ic-book" viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></symbol>
+<symbol id="ic-saved" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+<symbol id="ic-add" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></symbol>
+<symbol id="ic-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></symbol>
+<symbol id="ic-bm" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></symbol>
+<symbol id="ic-vol-on" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/></symbol>
+<symbol id="ic-vol-off" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></symbol>
+<symbol id="ic-ext" viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></symbol>
+<symbol id="ic-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+<symbol id="ic-rewind" viewBox="0 0 24 24"><polyline points="11 17 2 12 11 7 11 17"/><polyline points="22 17 13 12 22 7 22 17"/></symbol>
+<symbol id="ic-fwd" viewBox="0 0 24 24"><polyline points="13 17 22 12 13 7 13 17"/><polyline points="2 17 11 12 2 7 2 17"/></symbol>
+</defs></svg>
+
+<div id="app">
+  <main>
+    <!-- FEED -->
+    <section class="view active" id="view-feed">
+      <div class="feed-wrap">
+        <div id="feed"></div>
+        <div class="feed-top">
+          <div class="logo">
+            <img src="https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/godot/godot-original.svg" alt="G" onerror="this.style.display='none'">
+            <span>Godot</span>Tok
+          </div>
+          <div class="spacer"></div>
+          <button class="pill" id="longToggle">longform: off</button>
+        </div>
+        <div id="hints">
+          <div><b>tap</b> to pause / play</div>
+          <div><b>double-tap left</b> rewind 10s</div>
+          <div><b>double-tap right</b> forward 10s</div>
+          <div><b>hold</b> anywhere for 2x speed</div>
+          <div><b>drag scrubber</b> at bottom to seek</div>
+          <div><b>swipe up/down</b> for next video</div>
+          <button id="hintsOk">got it</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- SEARCH -->
+    <section class="view" id="view-search">
+      <div class="search-top">
+        <input type="text" id="searchInput" placeholder="Search videos, topics, GDScript...">
+      </div>
+      <div class="search-results" id="searchResults"></div>
+    </section>
+
+    <!-- LEARN: GDQuest + Flashcards -->
+    <section class="view" id="view-learn">
+      <div class="stabs" id="learn-stabs">
+        <button class="stab active" data-stab="gdquest">GDQuest app</button>
+        <button class="stab" data-stab="flashcards">Flashcards</button>
+      </div>
+      <div class="subview active" id="sv-gdquest">
+        <div class="pagebar">
+          <span class="ptitle">learn_gdscript/</span>
+          <span class="chip" style="border:0;background:none;color:var(--n3)">GDQuest, free &amp; open source</span>
+          <button class="extbtn" onclick="window.open('https://gdquest.github.io/learn-gdscript/','_blank')">&#8599; open</button>
+        </div>
+        <div class="framehost" id="learnHost"></div>
+        <div class="framenote">May take a moment to load. Designed for desktop; best used unfolded or in landscape on the Fold.</div>
+      </div>
+      <div class="subview" id="sv-flashcards">
+        <div class="fc-mode-bar">
+          <button class="active" id="fcModeStudy">Study</button>
+          <button id="fcModeList">All cards</button>
+          <button id="fcModeAdd">+ Add card</button>
+        </div>
+        <div id="fcStudyView" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden"></div>
+        <div id="fcListView" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden"></div>
+        <div id="fcAddView" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden">
+          <div style="flex:1;overflow-y:auto;padding:14px">
+            <div class="formcard">
+              <label>Question (front)</label>
+              <input type="text" id="fcQ" placeholder="e.g. What node do I use for player movement?">
+              <label>Answer (back)</label>
+              <input type="text" id="fcA" placeholder="e.g. CharacterBody2D">
+              <label>Code snippet (optional, shown on back)</label>
+              <input type="text" id="fcCode" placeholder="e.g. move_and_slide()">
+              <button class="primary" id="fcAddBtn">Add flashcard</button>
+              <div id="fcAddMsg" style="font-family:var(--mono);font-size:11px;margin-top:6px;color:var(--grn)"></div>
+            </div>
+            <details>
+              <summary>add cards in the HTML file</summary>
+              <div class="dbody">
+                <p>Open <code>Index.html</code> in a text editor. Search for <code>MY_CARDS</code>. You will find a clearly marked array near the top of the script section. Add entries like:</p>
+                <p><code>{q:'Your question here', a:'Your answer here'},</code></p>
+                <p>Optionally add <code>code:'your_snippet()'</code> to show a code block on the back. Save the file and upload it to GitHub.</p>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- REF: Docs + Cheatsheet + Recipes -->
+    <section class="view" id="view-ref">
+      <div class="stabs" id="ref-stabs">
+        <button class="stab active" data-stab="docs">Docs</button>
+        <button class="stab" data-stab="cheatsheet">Cheatsheet</button>
+        <button class="stab" data-stab="recipes">Recipes</button>
+      </div>
+      <div class="subview active" id="sv-docs">
+        <div class="pagebar">
+          <span class="ptitle">docs/</span>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/">Home</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html">GDScript</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html">Signals</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html">CharBody2D</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/tutorials/2d/index.html">2D</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/tutorials/shaders/index.html">Shaders</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/classes/index.html">Classes</button>
+          <button class="extbtn" id="docsExt">&#8599; open</button>
+        </div>
+        <div class="framehost" id="docsHost"></div>
+        <div class="framenote">If docs do not load in the frame, use &#8599; open to view in your browser.</div>
+      </div>
+      <div class="subview" id="sv-cheatsheet">
+        <div class="cheat" id="cheatContent"></div>
+      </div>
+      <div class="subview" id="sv-recipes">
+        <div class="pagebar">
+          <span class="ptitle">recipes/</span>
+          <span class="chip" style="border:0;background:none;color:var(--n3)">KidsCanCode Godot 4 Recipes</span>
+          <button class="extbtn" onclick="window.open('https://kidscancode.org/godot_recipes/4.x/','_blank')">&#8599; open</button>
+        </div>
+        <div class="framehost" id="recipesHost"></div>
+        <div class="framenote">Full Godot 4 recipe book. If it does not load, use &#8599; open.</div>
+      </div>
+    </section>
+
+    <!-- SAVED -->
+    <section class="view" id="view-saved">
+      <div class="scrollpage">
+        <div class="pagehead">playlist</div>
+        <div class="pagesub">Stored on this device. No account needed.</div>
+        <div id="savedList"></div>
+      </div>
+    </section>
+
+    <!-- ADD -->
+    <section class="view" id="view-add">
+      <div class="scrollpage">
+        <div class="pagehead">add_video</div>
+        <div class="pagesub">Paste a YouTube or TikTok link to add it to your feed.</div>
+        <div class="formcard">
+          <label for="addUrl">url *</label>
+          <input type="text" id="addUrl" placeholder="https://youtube.com/watch?v=... or TikTok URL">
+          <label for="addTitle">title (optional)</label>
+          <input type="text" id="addTitle" placeholder="Shown on the card">
+          <label for="addCreator">creator (optional)</label>
+          <input type="text" id="addCreator" placeholder="Channel name">
+          <div class="checkrow">
+            <input type="checkbox" id="addLong">
+            <span>Longform — only shows when longform toggle is on</span>
+          </div>
+          <button class="primary" id="addBtn">add to feed</button>
+          <div id="addmsg"></div>
+        </div>
+        <details>
+          <summary>how to add videos</summary>
+          <div class="dbody">
+            <p><b>YouTube:</b> any link — <code>youtube.com/watch?v=</code>, <code>youtu.be/</code>, <code>/shorts/</code>. The ID is the 11-character string after <code>v=</code>.</p>
+            <p><b>TikTok:</b> copy the full URL from the browser address bar. It must contain <code>@user/video/NUMBER</code>. Short <code>vm.tiktok.com</code> links will not work — open them in a browser first to get the full URL.</p>
+          </div>
+        </details>
+        <details>
+          <summary>add videos directly in the HTML file</summary>
+          <div class="dbody">
+            <p>Open <code>Index.html</code> in a text editor. Search for <code>ADD VIDEOS HERE</code>. You will find a clearly labelled array. Copy any existing line and change four values:</p>
+            <p><code>{id:'yt_YOURID', type:'yt', vid:'YOURID', title:'Title', creator:'Name', long:false}</code></p>
+            <p>Set <code>type:'tt'</code> for TikTok and add <code>handle:'@username'</code>. Set <code>long:true</code> for long tutorials. Save and upload to GitHub.</p>
+          </div>
+        </details>
+        <details>
+          <summary>your added videos</summary>
+          <div class="dbody"><div id="userList"></div></div>
+        </details>
+        <details>
+          <summary>feed settings</summary>
+          <div class="dbody" id="settingsArea"></div>
+        </details>
+        <details>
+          <summary>install as app (PWA)</summary>
+          <div class="dbody">
+            <p>1. Upload both <code>Index.html</code> and <code>icon.png</code> to your GitHub repo.</p>
+            <p>2. Open your GitHub Pages URL in <b>Chrome</b> on Android.</p>
+            <p>3. Chrome menu &rarr; <b>Add to Home screen</b>. The icon.png file becomes your app icon.</p>
+            <p>Godot logo: Andrea Calabr&ograve; / Godot Foundation, CC BY 4.0.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <nav id="tabbar">
+    <button data-view="feed" class="active"><svg><use href="#ic-play"/></svg>feed</button>
+    <button data-view="search"><svg><use href="#ic-search"/></svg>search</button>
+    <button data-view="learn"><svg><use href="#ic-learn"/></svg>learn</button>
+    <button data-view="ref"><svg><use href="#ic-book"/></svg>ref</button>
+    <button data-view="saved"><svg><use href="#ic-saved"/></svg>saved</button>
+    <button data-view="add"><svg><use href="#ic-add"/></svg>add</button>
+  </nav>
+</div>
+
+<div id="modal">
+  <div class="mbar">
+    <div class="mtitle" id="mtitle"></div>
+    <button class="mclose" id="mclose">close</button>
+  </div>
+  <div class="mhost" id="mhost"></div>
+</div>
+<div id="toast"></div><script>
+'use strict';
+const PREVIEW = !!window.storage;
+
+/* ================================================================
+   🎮  ADD VIDEOS HERE
+   Copy any line, paste above it, change the values.
+
+   YouTube ID: the 11-char string after v= in the URL
+   TikTok ID:  the number at end of @user/video/NUMBER
+
+   long:false  always shown (shorts, tips, medium vids)
+   long:true   only shown when the "longform" toggle is on
+   ================================================================ */
+const SEED_VIDEOS = [
+  /* ── TikTok test ── */
+  {id:'tt_7621614029471059233',type:'tt',vid:'7621614029471059233',handle:'@godot_tutorial',title:'Godot engine tips and tricks',creator:'@godot_tutorial',long:false},
+
+  /* ── YouTube Shorts ── */
+  {id:'yt_v7d8uYw59jk',type:'yt',vid:'v7d8uYw59jk',title:'60-Second Godot Roadmap for 2025',creator:'GDQuest',long:false},
+  {id:'yt_7bDRWiPMVjM',type:'yt',vid:'7bDRWiPMVjM',title:'3 Simple Tips for Godot 4.3',creator:'TheGodotRookie',long:false},
+  {id:'yt__JfiGCH3IH4',type:'yt',vid:'_JfiGCH3IH4',title:'Disabling Nodes | Godot Tips',creator:'Bitlytic',long:false},
+  {id:'yt_2KL1cAe2NFI',type:'yt',vid:'2KL1cAe2NFI',title:'Biggest Game Made with Godot 4',creator:'GameDevShorts',long:false},
+  {id:'yt_ckQGoa6-TMU',type:'yt',vid:'ckQGoa6-TMU',title:'Change Game Scene in Godot 4.4',creator:'GodotTips',long:false},
+  {id:'yt_bChoEFDe5ks',type:'yt',vid:'bChoEFDe5ks',title:"Godot 4.6 — What's New",creator:'Zenva',long:false},
+  {id:'yt_iletwmlcsEM',type:'yt',vid:'iletwmlcsEM',title:'Why AI Will Never Be Good at Godot 4',creator:'Zenva',long:false},
+  {id:'yt_-zwY2jM32A',type:'yt',vid:'-zwY2jM3-2A',title:'Control Projectile Direction in Godot 4',creator:'Quick Guide',long:false},
+
+  /* ── Regular YouTube ── */
+  {id:'yt_UuEqUN98uZo',type:'yt',vid:'UuEqUN98uZo',title:'5 Invaluable Godot 4 Code Patterns ft. GDQuest',creator:'PlayWithFurcifer',long:false},
+  {id:'yt_Pm-Gu8d_2Ug',type:'yt',vid:'Pm-Gu8d_2Ug',title:'Should You Use Godot 4 Already?',creator:'GDQuest',long:false},
+  {id:'yt_D0uGtnMhB-E',type:'yt',vid:'D0uGtnMhB-E',title:'Resources vs Dictionaries in Godot 4',creator:'DevWorm',long:false},
+  {id:'yt_XvRY-g27OQk',type:'yt',vid:'XvRY-g27OQk',title:'Easy 3D Pathfinding in Godot',creator:'Chap.C Creates',long:false},
+  {id:'yt_h7O2lLNgbn4',type:'yt',vid:'h7O2lLNgbn4',title:'Procedural Dungeon with Drunkard Walk',creator:'DeveloperEzra',long:false},
+  {id:'yt_xoExhXu-Aw0',type:'yt',vid:'xoExhXu-Aw0',title:'GodotCon 2025: C# in Godot',creator:'GodotCon',long:false},
+
+  /* ── GodotCon 2025 ── */
+  {id:'yt_u_WMJG0menc',type:'yt',vid:'u_WMJG0menc',title:'State of Godot and the Web — GodotCon 2025',creator:'GodotCon',long:false},
+  {id:'yt_wWD7OCx7tNs',type:'yt',vid:'wWD7OCx7tNs',title:'Open Language Models in Godot — GodotCon 2025',creator:'GodotCon',long:false},
+  {id:'yt_JqL_oZ9SG7Q',type:'yt',vid:'JqL_oZ9SG7Q',title:'Building a Godot Plugin — GodotCon 2025',creator:'Scott Doxey',long:false},
+  {id:'yt_kXn2WoWK0rc',type:'yt',vid:'kXn2WoWK0rc',title:'Making a Fake OS in Godot — GodotCon 2025',creator:'Davide Di Staso',long:false},
+  {id:'yt_ITRuS1ge9AY',type:'yt',vid:'ITRuS1ge9AY',title:'3D Particle Trail in Godot 4',creator:'FencerDevLog',long:false},
+
+  /* ── Longform ── */
+  {id:'yt_LOhfqjmasi0',type:'yt',vid:'LOhfqjmasi0',title:'How to Make a Video Game — Godot Beginner Tutorial',creator:'Brackeys',long:true},
+  {id:'yt_e1zJS31tr88',type:'yt',vid:'e1zJS31tr88',title:'How to Program in Godot — GDScript in 1 Hour',creator:'Brackeys',long:true},
+  {id:'yt_nAh_Kx5Zh5Q',type:'yt',vid:'nAh_Kx5Zh5Q',title:'The Ultimate Introduction to Godot 4',creator:'Clear Code',long:true},
+  {id:'yt_HRxw8Ecrqxk',type:'yt',vid:'HRxw8Ecrqxk',title:'Complete FREE Godot 4 Beginner Course 2025',creator:'Red Fools Studio',long:true},
+];
+
+/* ================================================================
+   🃏  ADD CUSTOM FLASHCARDS HERE
+   {q:'Question text', a:'Answer text', code:'optional_snippet()'}
+   ================================================================ */
+const MY_CARDS = [
+  /* examples — uncomment and edit:
+  {q:'What node do I use for my player?', a:'CharacterBody2D — it gives you full manual control over movement via move_and_slide().'},
+  {q:'How do I preload a scene?', a:'var EnemyScene = preload("res://enemy.tscn")', code:'var e = EnemyScene.instantiate()\nadd_child(e)'},
+  */
+];
+
+/* ── tips ─────────────────────────────────────────────────────── */
+const TIPS = [
+  {f:'scope.gd',t:'Make smaller games than you think you should',p:'Your first ten games are practice. A finished tiny game teaches more than an abandoned epic: menus, saving, balancing, shipping. Cut your idea in half, then cut it again.'},
+  {f:'game_feel.gd',t:'Juice is cheap and changes everything',p:'Screen shake, hit-stop, particles and a sound on every action turn a stiff prototype into something that feels good. A few lines on <code>Camera2D</code> and an <code>AnimationPlayer</code> get you most of the way.'},
+  {f:'typing.gd',t:'Use static typing in GDScript',p:'Write <code>var speed: float = 300.0</code> and <code>func hit(damage: int) -> void:</code>. You get real autocomplete, errors at parse time instead of runtime, and faster execution.'},
+  {f:'signals.gd',t:'Call down, signal up',p:'Parents may call methods on their children directly. Children should never reach up — they emit signals and let whoever cares connect. This one rule keeps scenes reusable.'},
+  {f:'git.gd',t:'Version control from day one',p:'<code>git init</code> before you write a line. Ignore the <code>.godot/</code> folder. The first time a refactor goes wrong or a scene file corrupts, one command gets you back.'},
+  {f:'playtest.gd',t:'Watch strangers play, silently',p:'Friends are polite and you explain too much. Hand the build to someone who owes you nothing, say nothing, write down everywhere they get confused. That list is your real backlog.'},
+  {f:'pixels.gd',t:'Pick one pixel density and commit',p:'Choose a tile size (16 or 32) and keep every sprite at that scale. Set the default texture filter to Nearest and use the viewport stretch mode for crisp scaling on any screen.'},
+  {f:'slice.gd',t:'Build a vertical slice first',p:'One polished minute of real gameplay, real art, real sound tells you whether the loop is fun. Find that out before you build ten levels for a loop that does not work.'},
+  {f:'scenes.gd',t:'If you use it twice, make it a scene',p:'Bullets, pickups, enemies, UI panels — anything reused becomes its own scene, instanced where needed. Scenes are prefabs. Composition beats one giant scene tree.'},
+  {f:'delta.gd',t:'Always multiply movement by delta',p:'<code>velocity * delta</code> in <code>_process</code>, or put physics in <code>_physics_process</code>. Skip this and your game plays at different speeds on different machines.'},
+  {f:'audio.gd',t:'Audio is half the experience',p:'Even rough placeholder sounds beat silence — players forgive simple art far faster than a mute game. Balance with audio buses early so you do not have to redo it at the end.'},
+  {f:'marketing.gd',t:'Marketing starts at the prototype',p:'Post short clips of your juiciest moments while you build. An audience grows slowly. The day your store page goes live should not be the first day strangers hear about your game.'},
+];
+
+/* ── built-in flashcards ─────────────────────────────────────── */
+const BUILT_IN_CARDS = [
+  {q:'How do you declare a typed variable?',a:'Use a colon after the name followed by the type.',code:'var speed: float = 300.0\nvar name: String = "Player"\nvar alive: bool = true'},
+  {q:'What is the syntax for a function with a return type?',a:'Put the return type after a -> arrow.',code:'func get_speed() -> float:\n    return speed\n\nfunc die() -> void:\n    queue_free()'},
+  {q:'What is the difference between _process and _physics_process?',a:'_process runs every rendered frame with variable delta. _physics_process runs at a fixed rate (60 Hz by default). Always use _physics_process for movement and physics.'},
+  {q:'How do you connect a signal in Godot 4?',a:'Use .connect() on the signal. You can connect in code or in the editor.',code:'area.body_entered.connect(_on_body_entered)\n\n# With a custom signal:\nsignal health_changed(val: int)\nhealth_changed.connect(_on_health_changed)'},
+  {q:'What does @export do?',a:'Makes a variable editable directly in the Godot Inspector without touching code. Useful for tuning values like speed or damage.',code:'@export var speed: float = 300.0\n@export var max_health: int = 100'},
+  {q:'What is @onready?',a:'Waits until the node enters the scene tree before assigning the variable. Use it for all node references.',code:'@onready var sprite = $Sprite2D\n@onready var anim = $AnimationPlayer'},
+  {q:'How do you get a node by path?',a:'Use the $ shorthand for direct children, or get_node() for deeper paths.',code:'var enemy = $Enemy\nvar hp_bar = get_node("UI/HBoxContainer/HPBar")'},
+  {q:'How do you emit a signal?',a:'Call .emit() on the signal. Pass arguments if the signal was declared with parameters.',code:'signal hit_taken(damage: int)\n\nhit_taken.emit(25)'},
+  {q:'What is call_deferred()?',a:'Queues a method to run safely at the end of the current frame. Use it when modifying the scene tree from inside a physics or signal callback.',code:'call_deferred("add_child", new_node)'},
+  {q:'How do you move a CharacterBody2D?',a:'Set the velocity vector and call move_and_slide() in _physics_process.',code:'func _physics_process(delta):\n    velocity.x = Input.get_axis("left","right") * speed\n    velocity.y += GRAVITY * delta\n    move_and_slide()'},
+  {q:'What is the match statement?',a:'A cleaner alternative to if/elif chains, similar to switch/case in other languages.',code:'match state:\n    "idle": play_idle()\n    "run": play_run()\n    "jump": play_jump()\n    _: pass  # default'},
+  {q:'How do you load and instance a scene?',a:'Preload at the top of the file for scenes you know you will need, or load() at runtime.',code:'var BulletScene = preload("res://bullet.tscn")\n\nfunc shoot():\n    var b = BulletScene.instantiate()\n    add_child(b)'},
+  {q:'What is an Autoload / singleton?',a:'A scene or script loaded once globally, accessible from any script. Add it in Project > Project Settings > Autoload. Good for game state, audio manager, and event bus.'},
+  {q:'How do you detect input?',a:'Use Input.is_action_pressed() for held actions and is_action_just_pressed() for single-frame triggers.',code:'if Input.is_action_pressed("move_right"):\n    velocity.x = speed\nif Input.is_action_just_pressed("jump"):\n    jump()'},
+  {q:'How do you change the current scene?',a:'Use get_tree().change_scene_to_file() for the most common case.',code:'get_tree().change_scene_to_file("res://level2.tscn")\n\n# Or with a preloaded scene:\nget_tree().change_scene_to_packed(LEVEL_SCENE)'},
+  {q:'What is queue_free() vs free()?',a:'queue_free() marks the node for deletion at the end of the current frame — safe to call at any time. free() deletes immediately and can crash if anything still holds a reference.'},
+  {q:'How do you use a Timer?',a:'Add a Timer node and connect its timeout signal, or create one in code and await it.',code:'# One-shot timer in code:\nvar timer = get_tree().create_timer(2.0)\nawait timer.timeout\nprint("2 seconds passed")'},
+  {q:'How do you tween a property?',a:'Create a Tween with create_tween() and call tween_property().',code:'var tw = create_tween()\ntw.tween_property(self, "position", target_pos, 0.3)\ntw.tween_property(self, "modulate:a", 0.0, 0.2)'},
+  {q:'What is the difference between Area2D and CollisionShape2D?',a:'Area2D is a node that detects overlaps and triggers signals. CollisionShape2D defines the actual shape geometry — it must be a child of a physics body or Area2D.'},
+  {q:'How do you save data to disk?',a:'Use FileAccess with JSON for structured data, or ConfigFile for simple key-value settings.',code:'var f = FileAccess.open("user://save.json", FileAccess.WRITE)\nf.store_string(JSON.stringify(save_data))\nf.close()'},
+  {q:'What does delta mean and why do you use it?',a:'Delta is the time in seconds since the last frame (e.g. 0.016 at 60 fps). Multiplying by delta makes your movement frame-rate independent so the game runs at the same speed on any hardware.'},
+  {q:'How do groups work in Godot?',a:'Nodes can belong to named groups. You can then call methods or send signals to all members of a group at once.',code:'# Add a node to group:\nadd_to_group("enemies")\n\n# Affect all enemies:\nget_tree().call_group("enemies", "take_damage", 10)'},
+  {q:'What is the Resource class for?',a:'Resources are data containers that can be saved as .tres files and shared between nodes. Use them for items, stats, spells, or any data you want to design in the inspector.'},
+  {q:'How do you use lerp for smooth movement?',a:'lerp() interpolates between two values. Use it with delta for smooth camera follow or UI transitions.',code:'position = lerp(position, target, 5.0 * delta)\ncam_zoom = lerp(cam_zoom, target_zoom, 8.0 * delta)'},
+  {q:'What is _ready() for?',a:'Called once when the node and all its children have entered the scene tree. Use it to initialise variables, connect signals, and run any setup that requires children to exist.'},
+];
+
+/* ── storage adapter ─────────────────────────────────────────── */
+const mem = {};
+const store = {
+  async get(k){
+    if(window.storage){try{const r=await window.storage.get(k);return r?JSON.parse(r.value):null}catch{return null}}
+    try{const v=window.localStorage.getItem(k);return v?JSON.parse(v):null}catch{return mem[k]??null}
+  },
+  async set(k,v){
+    if(window.storage){try{await window.storage.set(k,JSON.stringify(v))}catch{}; return}
+    try{window.localStorage.setItem(k,JSON.stringify(v))}catch{mem[k]=v}
+  }
+};
+
+/* ── state ───────────────────────────────────────────────────── */
+let userVideos=[], savedIds=[], savedItems={}, longformOn=false, muted=true;
+let activeCard=null, activeIframe=null;
+const cardState=new Map(); // {kind,playing,currentTime,duration}
+let shuffledFeed=[]; // set once per session, randomised
+
+/* ── utils ───────────────────────────────────────────────────── */
+function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]]};return b}
+
+function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
+function svgUse(id){const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.innerHTML='<use href="#'+id+'"/>';return s}
+function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200)}
+
+function itemUrl(v){return v.type==='yt'?'https://www.youtube.com/watch?v='+v.vid:'https://www.tiktok.com/'+(v.handle||'')+(v.handle?'/':'@video/')+'video/'+v.vid}
+function ytThumb(id){return 'https://i.ytimg.com/vi/'+id+'/mqdefault.jpg'}
+
+function parseVideoUrl(raw){
+  let u;try{u=new URL(raw.trim())}catch{return null}
+  const h=u.hostname.replace(/^www\./,'');
+  if(h==='youtu.be'){const id=u.pathname.split('/')[1];if(id)return{type:'yt',vid:id}}
+  if(h.endsWith('youtube.com')){
+    const v=u.searchParams.get('v');if(v)return{type:'yt',vid:v};
+    const m=u.pathname.match(/\/(shorts|embed|live)\/([A-Za-z0-9_-]{6,})/);if(m)return{type:'yt',vid:m[2]};
+  }
+  if(h.endsWith('tiktok.com')){
+    if(h.startsWith('vm.')||h.startsWith('vt.'))return{type:'tt_short'};
+    const m=u.pathname.match(/\/@([^\/]+)\/video\/(\d+)/);if(m)return{type:'tt',vid:m[2],handle:'@'+m[1]};
+    const m2=u.pathname.match(/\/video\/(\d+)/);if(m2)return{type:'tt',vid:m2[1]};
+  }
+  return null;
+}
+
+/* ── YouTube postMessage ─────────────────────────────────────── */
+function ytCmd(card,fn,args){
+  try{const f=card.querySelector('iframe');if(f&&f.contentWindow)f.contentWindow.postMessage(JSON.stringify({event:'command',func:fn,args:args??''}),'*')}catch{}
+}
+function seekRelative(card,secs){
+  const st=cardState.get(card);if(!st||!st.duration)return;
+  const t=Math.max(0,Math.min((st.currentTime||0)+secs,st.duration));
+  ytCmd(card,'seekTo',[t,true]);
+}
+
+window.addEventListener('message',e=>{
+  if(!activeCard||!activeIframe)return;
+  try{
+    const d=(typeof e.data==='string')?JSON.parse(e.data):e.data;
+    if(e.source!==activeIframe.contentWindow)return;
+    if(d.event==='infoDelivery'&&d.info){
+      const st=cardState.get(activeCard);if(!st)return;
+      if(d.info.currentTime!==undefined)st.currentTime=d.info.currentTime;
+      if(d.info.duration!==undefined&&d.info.duration>0)st.duration=d.info.duration;
+      updateScrubber(activeCard,st);
+    }
+  }catch{}
+});
+
+function updateScrubber(card,st){
+  if(!st.duration)return;
+  const fill=card.querySelector('.scrub-fill');
+  if(fill)fill.style.width=((st.currentTime/st.duration)*100).toFixed(2)+'%';
+}
+
+/* ── gestures ────────────────────────────────────────────────── */
+function attachGestures(card,layer){
+  let pd=null, lastTap=0, singleTapTimer=null;
+  layer.addEventListener('contextmenu',e=>e.preventDefault());
+
+  layer.addEventListener('pointerdown',e=>{
+    pd={x:e.clientX,y:e.clientY,hold:false};
+    pd.timer=setTimeout(()=>{
+      if(!pd)return;
+      pd.hold=true;
+      card.classList.add('boosting');
+      ytCmd(card,'setPlaybackRate',[2]);
+    },280);
+  });
+
+  layer.addEventListener('pointermove',e=>{
+    if(!pd)return;
+    if(Math.hypot(e.clientX-pd.x,e.clientY-pd.y)>14){
+      clearTimeout(pd.timer);
+      if(pd.hold){card.classList.remove('boosting');ytCmd(card,'setPlaybackRate',[1])}
+      pd=null;
+    }
+  });
+
+  layer.addEventListener('pointerup',e=>{
+    if(!pd)return;
+    clearTimeout(pd.timer);
+    const wasHold=pd.hold;
+    const tapX=e.clientX-layer.getBoundingClientRect().left;
+    const tapW=layer.offsetWidth;
+    pd=null;
+    if(wasHold){card.classList.remove('boosting');ytCmd(card,'setPlaybackRate',[1]);return}
+    // double-tap detection
+    const now=Date.now();
+    if(now-lastTap<300){
+      clearTimeout(singleTapTimer); lastTap=0;
+      if(tapX<tapW*0.38){seekRelative(card,-10);showSeekHint(card,'l');return}
+      if(tapX>tapW*0.62){seekRelative(card,10);showSeekHint(card,'r');return}
+      // middle double-tap: treat as single
+    } else {
+      lastTap=now;
+      singleTapTimer=setTimeout(()=>{togglePlay(card)},220);
+    }
+  });
+
+  layer.addEventListener('pointercancel',()=>{
+    if(!pd)return;
+    clearTimeout(pd.timer);
+    if(pd.hold){card.classList.remove('boosting');ytCmd(card,'setPlaybackRate',[1])}
+    pd=null;
+  });
+}
+
+function togglePlay(card){
+  const st=cardState.get(card);if(!st)return;
+  if(st.playing){ytCmd(card,'pauseVideo');st.playing=false;card.classList.add('paused')}
+  else{ytCmd(card,'playVideo');if(muted)ytCmd(card,'mute');else ytCmd(card,'unMute');st.playing=true;card.classList.remove('paused')}
+}
+
+function showSeekHint(card,side){
+  const cls=side==='l'?'sl':'sr';
+  const h=card.querySelector('.seek-hint.'+cls);
+  if(!h)return;
+  h.classList.remove('show');
+  void h.offsetWidth;
+  h.classList.add('show');
+  setTimeout(()=>h.classList.remove('show'),550);
+}
+
+/* ── scrubber drag ───────────────────────────────────────────── */
+function attachScrubber(card,hitEl){
+  function seek(e){
+    const st=cardState.get(card);if(!st||!st.duration)return;
+    const rect=hitEl.getBoundingClientRect();
+    const pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
+    const t=pct*st.duration;
+    ytCmd(card,'seekTo',[t,true]);
+    st.currentTime=t;updateScrubber(card,st);
+  }
+  let dragging=false;
+  hitEl.addEventListener('pointerdown',e=>{e.stopPropagation();dragging=true;hitEl.setPointerCapture(e.pointerId);seek(e)});
+  hitEl.addEventListener('pointermove',e=>{if(dragging){e.stopPropagation();seek(e)}});
+  hitEl.addEventListener('pointerup',e=>{dragging=false});
+}
+
+/* ── build video card ────────────────────────────────────────── */
+function buildVideoCard(v){
+  const card=el('div','card');
+  card.dataset.vid=v.id;
+  card.dataset.type=v.type;
+
+  if(PREVIEW){
+    const fb=el('div','fallback');
+    const img=document.createElement('img');
+    img.src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/godot/godot-original.svg';
+    img.alt='';fb.appendChild(img);
+    fb.appendChild(el('div','ft','embed blocked in claude preview'));
+    fb.appendChild(el('div','fs','download godottok.html and open it (or host it on github pages) for the full app'));
+    const go=el('button','fb',v.type==='yt'?'watch on youtube':'open on tiktok');
+    go.addEventListener('click',()=>window.open(itemUrl(v),'_blank'));
+    fb.appendChild(go);card.appendChild(fb);
+  } else {
+    const f=document.createElement('iframe');
+    f.setAttribute('allow','autoplay; encrypted-media; picture-in-picture; fullscreen');
+    f.setAttribute('allowfullscreen','');
+    f.loading='lazy';
+    if(v.type==='yt'){
+      f.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(v.vid)+'?enablejsapi=1&playsinline=1&controls=0&rel=0&modestbranding=1&mute=1&iv_load_policy=3';
+    } else {
+      f.src='https://www.tiktok.com/embed/v2/'+encodeURIComponent(v.vid);
+    }
+    card.appendChild(f);
+  }
+
+  card.appendChild(el('div','scrim'));
+
+  const meta=el('div','meta');
+  const cr=el('div','mcr');
+  const badgeEl=el('span','badge '+(v.type==='yt'?'yt':'tt'),v.type==='yt'?'YT':'TT');
+  cr.appendChild(badgeEl);
+  if(v.long){cr.appendChild(document.createTextNode(' '));cr.appendChild(el('span','badge long','LONG'))}
+  cr.appendChild(el('span','',v.creator||''));
+  meta.appendChild(cr);
+  meta.appendChild(el('div','mtitle',v.title));
+  card.appendChild(meta);
+
+  /* rail */
+  const rail=el('div','rail');
+
+  if(v.type==='yt'&&!PREVIEW){
+    const bM=el('button','mutebtn');bM.appendChild(svgUse(muted?'ic-vol-off':'ic-vol-on'));
+    bM.addEventListener('click',e=>{
+      e.stopPropagation();muted=!muted;
+      document.querySelectorAll('.mutebtn').forEach(b=>{b.innerHTML='';b.appendChild(svgUse(muted?'ic-vol-off':'ic-vol-on'))});
+      if(activeCard)muted?ytCmd(activeCard,'mute'):ytCmd(activeCard,'unMute');
+      toast(muted?'muted':'sound on');
+    });
+    rail.appendChild(bM);
+  }
+
+  const bSv=el('button');bSv.appendChild(svgUse('ic-bm'));
+  if(savedIds.includes(v.id))bSv.classList.add('on');
+  bSv.addEventListener('click',async e=>{
+    e.stopPropagation();
+    const i=savedIds.indexOf(v.id);
+    if(i>=0){savedIds.splice(i,1);delete savedItems[v.id];bSv.classList.remove('on');toast('removed from saved')}
+    else{savedIds.push(v.id);savedItems[v.id]=v;bSv.classList.add('on');toast('saved to playlist')}
+    await store.set('gt_saved',{ids:savedIds,items:savedItems});renderSaved();
+  });
+  rail.appendChild(bSv);
+
+  const bSh=el('button');bSh.appendChild(svgUse('ic-share'));
+  bSh.addEventListener('click',e=>{e.stopPropagation();shareUrl(itemUrl(v),v.title)});
+  rail.appendChild(bSh);
+
+  const bEx=el('button');bEx.appendChild(svgUse('ic-ext'));
+  bEx.addEventListener('click',e=>{e.stopPropagation();window.open(itemUrl(v),'_blank')});
+  rail.appendChild(bEx);
+
+  card.appendChild(rail);
+
+  if(v.type==='yt'){
+    const cs=el('div','center-state');const ps=document.createElementNS('http://www.w3.org/2000/svg','svg');ps.setAttribute('viewBox','0 0 24 24');ps.innerHTML='<polygon points="6 4 20 12 6 20 6 4" fill="rgba(236,239,244,.8)"/>';cs.appendChild(ps);card.appendChild(cs);
+    card.appendChild(el('div','boost-badge','2x'));
+
+    /* seek hints */
+    const hl=el('div','seek-hint sl');hl.innerHTML='<svg viewBox="0 0 24 24"><use href="#ic-rewind"/></svg><span>-10s</span>';card.appendChild(hl);
+    const hr=el('div','seek-hint sr');hr.innerHTML='<svg viewBox="0 0 24 24"><use href="#ic-fwd"/></svg><span>+10s</span>';card.appendChild(hr);
+
+    if(!PREVIEW){
+      const tap=el('div','taplayer');attachGestures(card,tap);card.appendChild(tap);
+    }
+  }
+
+  /* scrubber */
+  if(v.type==='yt'&&!PREVIEW){
+    const sb=el('div','scrubber');
+    sb.appendChild(el('div','scrub-track'));
+    sb.appendChild(el('div','scrub-fill'));
+    const hit=el('div','scrub-hit');
+    attachScrubber(card,hit);
+    sb.appendChild(hit);
+    card.appendChild(sb);
+  }
+
+  cardState.set(card,{kind:v.type==='yt'?'yt':'tt',playing:false,currentTime:0,duration:0});
+  return card;
+}
+
+function buildTipCard(tip,n){
+  const card=el('div','card tip');
+  const box=el('div','tipbox');
+  const tf=el('div','tfile');
+  const tfl=el('span');tfl.innerHTML='res://tips/<b>'+tip.f+'</b>';
+  tf.appendChild(tfl);tf.appendChild(el('span','','tip '+n));
+  box.appendChild(tf);box.appendChild(el('h2','',tip.t));
+  const p=el('p');p.innerHTML=tip.p;box.appendChild(p);
+  card.appendChild(box);
+  cardState.set(card,{kind:'tip'});
+  return card;
+}
+
+/* ── build shuffled feed ─────────────────────────────────────── */
+function buildShuffledFeed(){
+  const vids=shuffle([...userVideos,...SEED_VIDEOS]);
+  const tips=shuffle([...TIPS]);
+  shuffledFeed=[];let ti=0;
+  vids.forEach((v,i)=>{
+    shuffledFeed.push({kind:'video',data:v});
+    if((i+1)%2===0&&ti<tips.length){shuffledFeed.push({kind:'tip',data:tips[ti++]})}
+  });
+  while(ti<tips.length){shuffledFeed.push({kind:'tip',data:tips[ti++]})}
+}
+
+/* ── render feed ─────────────────────────────────────────────── */
+let feedObs=null;
+function renderFeed(){
+  const feedEl=document.getElementById('feed');feedEl.innerHTML='';cardState.clear();activeCard=null;activeIframe=null;
+  if(feedObs){feedObs.disconnect();feedObs=null}
+  const items=shuffledFeed.filter(it=>it.kind==='tip'||(longformOn||!it.data.long));
+  let tn=0;
+  items.forEach(it=>{
+    const c=it.kind==='video'?buildVideoCard(it.data):buildTipCard(it.data,++tn);
+    feedEl.appendChild(c);
+  });
+  /* height observer so cards fill the scroll container */
+  const wrap=feedEl;
+  function setH(){const h=wrap.clientHeight;feedEl.querySelectorAll('.card').forEach(c=>c.style.height=h+'px')}
+  const ro=new ResizeObserver(setH);ro.observe(wrap);setH();
+  feedObs=new IntersectionObserver(entries=>{
+    entries.forEach(en=>{
+      const card=en.target;
+      if(en.intersectionRatio>=0.6){
+        if(activeCard&&activeCard!==card){ytCmd(activeCard,'pauseVideo');const s=cardState.get(activeCard);if(s)s.playing=false}
+        activeCard=card;
+        const iframe=card.querySelector('iframe');activeIframe=iframe||null;
+        const st=cardState.get(card);
+        if(st&&st.kind==='yt'&&!PREVIEW){ytCmd(card,'playVideo');if(muted)ytCmd(card,'mute');else ytCmd(card,'unMute');st.playing=true;card.classList.remove('paused')}
+      }else if(card===activeCard&&en.intersectionRatio<0.4){
+        ytCmd(card,'pauseVideo');const st=cardState.get(card);if(st)st.playing=false;
+      }
+    });
+  },{root:feedEl,threshold:[0.4,0.6]});
+  feedEl.querySelectorAll('.card').forEach(c=>feedObs.observe(c));
+}
+
+/* ── search ──────────────────────────────────────────────────── */
+function renderSearch(q){
+  const host=document.getElementById('searchResults');host.innerHTML='';
+  if(!q.trim()){
+    host.innerHTML='<div class="search-empty">search videos, gdscript topics, or a godot class name</div>';
+    const dl=el('div','doclinks');
+    [['All docs','https://docs.godotengine.org/en/stable/'],
+     ['GDScript basics','https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html'],
+     ['Signals','https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html'],
+     ['CharacterBody2D','https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html'],
+     ['Node2D','https://docs.godotengine.org/en/stable/classes/class_node2d.html'],
+     ['Area2D','https://docs.godotengine.org/en/stable/classes/class_area2d.html'],
+    ].forEach(([label,url])=>{const b=el('button','doclinkbtn',label);b.addEventListener('click',()=>window.open(url,'_blank'));dl.appendChild(b)});
+    host.appendChild(dl);return;
+  }
+  const ql=q.toLowerCase();
+  const vids=[...userVideos,...SEED_VIDEOS].filter(v=>v.title.toLowerCase().includes(ql)||(v.creator||'').toLowerCase().includes(ql));
+  if(vids.length){
+    host.appendChild(el('div','search-section','videos'));
+    vids.forEach(v=>{
+      const row=el('div','search-vid');
+      if(v.type==='yt'){const img=document.createElement('img');img.src=ytThumb(v.vid);img.alt='';row.appendChild(img)}
+      else{row.appendChild(el('div','sithumb','TT'))}
+      const m=el('div','svm');m.appendChild(el('div','svm-t',v.title));m.appendChild(el('div','svm-s',v.creator||''));row.appendChild(m);
+      row.addEventListener('click',()=>openModal(v));host.appendChild(row);
+    });
+  }
+  host.appendChild(el('div','search-section','godot docs'));
+  const dl=el('div','doclinks');
+  [['Search docs for "'+q+'"','https://docs.godotengine.org/en/stable/search.html?q='+encodeURIComponent(q)],
+   ['GDQuest search','https://www.gdquest.com/?s='+encodeURIComponent(q)],
+   ['Ask on Godot QA','https://ask.godotengine.org/search?q='+encodeURIComponent(q)],
+  ].forEach(([label,url])=>{const b=el('button','doclinkbtn',label);b.addEventListener('click',()=>window.open(url,'_blank'));dl.appendChild(b)});
+  host.appendChild(dl);
+}
+
+document.getElementById('searchInput').addEventListener('input',e=>renderSearch(e.target.value));
+
+/* ── flashcards ──────────────────────────────────────────────── */
+let allCards=[], fcIdx=0, fcStudyMode=true;
+
+function loadFcCards(){
+  const custom=JSON.parse(localStorage.getItem('gt_fc_custom')||'[]');
+  allCards=[...BUILT_IN_CARDS,...MY_CARDS,...custom.map(c=>({...c,_user:true}))];
+  fcIdx=0;
+}
+
+function renderFcStudy(){
+  const host=document.getElementById('fcStudyView');host.innerHTML='';
+  if(!allCards.length){host.appendChild(el('div','search-empty','No cards. Add some!'));return}
+  const card=allCards[fcIdx%allCards.length];
+  const wrap=el('div','fc-study-wrap');
+
+  const outer=el('div','fc-card-outer');
+  const inner=el('div','fc-inner');
+  const front=el('div','fc-face front');
+  const back=el('div','fc-face back');
+  front.appendChild(el('div','fc-label','QUESTION '+(fcIdx%allCards.length+1)+' / '+allCards.length));
+  front.appendChild(el('div','fc-q',card.q));
+  back.appendChild(el('div','fc-label','ANSWER'));
+  back.appendChild(el('div','fc-a',card.a));
+  if(card.code){const pre=el('pre','fc-code',card.code.replace(/\\n/g,'\n'));back.appendChild(pre)}
+  inner.appendChild(front);inner.appendChild(back);outer.appendChild(inner);
+  outer.addEventListener('click',()=>outer.classList.toggle('flipped'));
+  wrap.appendChild(outer);
+
+  const acts=el('div','fc-actions');
+  const prog=el('div','fc-prog','tap card to flip');
+  acts.appendChild(prog);
+  const skip=el('button','btn-skip','skip');
+  const got=el('button','btn-got','got it');
+  skip.addEventListener('click',()=>{fcIdx=(fcIdx+1)%allCards.length;renderFcStudy()});
+  got.addEventListener('click',()=>{fcIdx=(fcIdx+1)%allCards.length;renderFcStudy()});
+  acts.appendChild(skip);acts.appendChild(got);
+  wrap.appendChild(acts);
+  host.appendChild(wrap);
+}
+
+function renderFcList(){
+  const host=document.getElementById('fcListView');host.innerHTML='';
+  const lw=el('div','fc-list-wrap');
+  allCards.forEach((card,i)=>{
+    const row=el('div','fc-list-item');
+    const m=el('div','');
+    m.appendChild(el('div','fq',card.q));
+    if(card._user)m.appendChild(el('div','fcust','custom'));
+    row.appendChild(m);
+    if(card._user){
+      const del=el('button','','×');
+      del.addEventListener('click',()=>{
+        const custom=JSON.parse(localStorage.getItem('gt_fc_custom')||'[]');
+        const newCustom=custom.filter(c=>c.q!==card.q);
+        localStorage.setItem('gt_fc_custom',JSON.stringify(newCustom));
+        loadFcCards();renderFcList();renderFcStudy();toast('card deleted');
+      });
+      row.appendChild(del);
+    }
+    lw.appendChild(row);
+  });
+  host.appendChild(lw);
+}
+
+document.getElementById('fcAddBtn').addEventListener('click',()=>{
+  const q=document.getElementById('fcQ').value.trim();
+  const a=document.getElementById('fcA').value.trim();
+  const code=document.getElementById('fcCode').value.trim();
+  const msg=document.getElementById('fcAddMsg');
+  if(!q||!a){msg.textContent='question and answer are required';msg.style.color='var(--red)';return}
+  const custom=JSON.parse(localStorage.getItem('gt_fc_custom')||'[]');
+  custom.push({q,a,code:code||undefined});
+  localStorage.setItem('gt_fc_custom',JSON.stringify(custom));
+  document.getElementById('fcQ').value='';document.getElementById('fcA').value='';document.getElementById('fcCode').value='';
+  msg.textContent='card added!';msg.style.color='var(--grn)';
+  setTimeout(()=>msg.textContent='',2000);
+  loadFcCards();renderFcStudy();
+});
+
+/* fc mode buttons */
+function setFcMode(mode){
+  ['Study','List','Add'].forEach(m=>{
+    document.getElementById('fcMode'+m).classList.toggle('active',m.toLowerCase()===mode);
+    document.getElementById('fc'+m+'View').style.display=m.toLowerCase()===mode?'flex':'none';
+  });
+}
+document.getElementById('fcModeStudy').addEventListener('click',()=>{setFcMode('study');renderFcStudy()});
+document.getElementById('fcModeList').addEventListener('click',()=>{setFcMode('list');renderFcList()});
+document.getElementById('fcModeAdd').addEventListener('click',()=>setFcMode('add'));
+
+/* ── cheatsheet ──────────────────────────────────────────────── */
+function buildCheatsheet(){
+  const host=document.getElementById('cheatContent');
+  host.innerHTML=`
+<h2>Variables &amp; Types</h2>
+<pre><span class="ck">var</span> speed: <span class="cn">float</span> = <span class="cn">300.0</span>
+<span class="ck">var</span> name: <span class="cn">String</span> = <span class="cs">"Player"</span>
+<span class="ck">var</span> alive: <span class="cn">bool</span> = <span class="ck">true</span>
+<span class="ck">const</span> MAX_HP: <span class="cn">int</span> = <span class="cn">100</span>
+<span class="ck">var</span> pos: <span class="cn">Vector2</span> = Vector2(<span class="cn">0</span>, <span class="cn">0</span>)
+<span class="ck">@export var</span> damage: <span class="cn">int</span> = <span class="cn">10</span>       <span class="cm"># editable in inspector</span>
+<span class="ck">@onready var</span> sprite = $Sprite2D    <span class="cm"># resolved when node is ready</span></pre>
+
+<h2>Functions</h2>
+<pre><span class="ck">func</span> <span class="cf">move</span>(delta: <span class="cn">float</span>) -> <span class="cn">void</span>:
+    position += velocity * delta
+
+<span class="ck">func</span> <span class="cf">get_speed</span>() -> <span class="cn">float</span>:
+    <span class="ck">return</span> speed
+
+<span class="ck">func</span> <span class="cf">_ready</span>():        <span class="cm"># runs once on enter tree</span>
+<span class="ck">func</span> <span class="cf">_process</span>(delta):  <span class="cm"># every frame</span>
+<span class="ck">func</span> <span class="cf">_physics_process</span>(delta): <span class="cm"># fixed 60 Hz</span></pre>
+
+<h2>Control Flow</h2>
+<pre><span class="ck">if</span> health &lt;= <span class="cn">0</span>:  die()
+<span class="ck">elif</span> health &lt; <span class="cn">20</span>: warn()
+<span class="ck">else</span>: heal()
+
+<span class="ck">for</span> i <span class="ck">in</span> range(<span class="cn">10</span>): print(i)
+<span class="ck">for</span> item <span class="ck">in</span> inventory: item.use()
+
+<span class="ck">while</span> running: update()
+
+<span class="ck">match</span> state:
+    <span class="cs">"idle"</span>:  play_idle()
+    <span class="cs">"run"</span>:   play_run()
+    _:       pass  <span class="cm"># default</span></pre>
+
+<h2>Arrays &amp; Dictionaries</h2>
+<pre><span class="ck">var</span> arr: Array[<span class="cn">int</span>] = [<span class="cn">1</span>, <span class="cn">2</span>, <span class="cn">3</span>]
+arr.append(<span class="cn">4</span>)      <span class="cm"># add to end</span>
+arr.size()          <span class="cm"># length</span>
+arr.has(<span class="cn">2</span>)          <span class="cm"># contains</span>
+arr.erase(<span class="cn">2</span>)        <span class="cm"># remove value</span>
+
+<span class="ck">var</span> d: <span class="cn">Dictionary</span> = {<span class="cs">"hp"</span>: <span class="cn">100</span>, <span class="cs">"name"</span>: <span class="cs">"hero"</span>}
+d[<span class="cs">"mp"</span>] = <span class="cn">50</span>
+d.has(<span class="cs">"hp"</span>)          <span class="cm"># true</span>
+d.keys()            <span class="cm"># array of keys</span></pre>
+
+<h2>Signals</h2>
+<pre><span class="ck">signal</span> health_changed(val: <span class="cn">int</span>)   <span class="cm"># declare</span>
+health_changed.<span class="cf">emit</span>(health)        <span class="cm"># fire</span>
+health_changed.<span class="cf">connect</span>(_on_health_changed)  <span class="cm"># listen</span>
+
+<span class="ck">func</span> <span class="cf">_on_health_changed</span>(val: <span class="cn">int</span>):
+    hud.update(val)</pre>
+
+<h2>Nodes &amp; Scene Tree</h2>
+<pre>$<span class="cf">NodeName</span>                          <span class="cm"># child by name</span>
+get_node(<span class="cs">"Path/To/Node"</span>)
+get_parent()
+add_child(node)
+queue_free()                       <span class="cm"># safe delete (end of frame)</span>
+
+<span class="ck">var</span> S = preload(<span class="cs">"res://enemy.tscn"</span>)
+<span class="ck">var</span> e = S.<span class="cf">instantiate</span>()
+add_child(e)</pre>
+
+<h2>CharacterBody2D Movement</h2>
+<pre><span class="ck">const</span> SPEED = <span class="cn">300.0</span>
+<span class="ck">const</span> GRAVITY = <span class="cn">980.0</span>
+<span class="ck">const</span> JUMP_V = <span class="cn">-600.0</span>
+
+<span class="ck">func</span> <span class="cf">_physics_process</span>(delta):
+    velocity.x = Input.<span class="cf">get_axis</span>(<span class="cs">"left"</span>, <span class="cs">"right"</span>) * SPEED
+    <span class="ck">if not</span> is_on_floor():
+        velocity.y += GRAVITY * delta
+    <span class="ck">if</span> is_on_floor() <span class="ck">and</span> Input.<span class="cf">is_action_just_pressed</span>(<span class="cs">"jump"</span>):
+        velocity.y = JUMP_V
+    <span class="cf">move_and_slide</span>()</pre>
+
+<h2>Input</h2>
+<table>
+<tr><th>code</th><th>use</th></tr>
+<tr><td><code>Input.is_action_pressed("x")</code></td><td>held down</td></tr>
+<tr><td><code>Input.is_action_just_pressed("x")</code></td><td>first frame only</td></tr>
+<tr><td><code>Input.is_action_just_released("x")</code></td><td>released frame</td></tr>
+<tr><td><code>Input.get_axis("left","right")</code></td><td>returns -1 to 1</td></tr>
+<tr><td><code>Input.get_vector("l","r","u","d")</code></td><td>Vector2 direction</td></tr>
+<tr><td><code>get_global_mouse_position()</code></td><td>world mouse pos</td></tr>
+</table>
+
+<h2>Vector2 Cheatsheet</h2>
+<table>
+<tr><th>code</th><th>use</th></tr>
+<tr><td><code>Vector2(x, y)</code></td><td>create</td></tr>
+<tr><td><code>v.normalized()</code></td><td>unit vector</td></tr>
+<tr><td><code>v.length()</code></td><td>magnitude</td></tr>
+<tr><td><code>v.dot(other)</code></td><td>dot product</td></tr>
+<tr><td><code>a.distance_to(b)</code></td><td>distance</td></tr>
+<tr><td><code>a.lerp(b, 0.1)</code></td><td>smooth blend</td></tr>
+<tr><td><code>Vector2.UP / DOWN / LEFT / RIGHT</code></td><td>unit constants</td></tr>
+</table>
+
+<h2>Tween &amp; Timer</h2>
+<pre><span class="ck">var</span> tw = <span class="cf">create_tween</span>()
+tw.<span class="cf">tween_property</span>(self, <span class="cs">"position"</span>, target, <span class="cn">0.3</span>)
+tw.<span class="cf">tween_property</span>(self, <span class="cs">"modulate:a"</span>, <span class="cn">0.0</span>, <span class="cn">0.2</span>)
+
+<span class="ck">var</span> t = get_tree().<span class="cf">create_timer</span>(<span class="cn">2.0</span>)
+<span class="ck">await</span> t.timeout
+print(<span class="cs">"2 seconds done"</span>)</pre>
+
+<h2>Common Node Types</h2>
+<table>
+<tr><th>node</th><th>use it for</th></tr>
+<tr><td><code>CharacterBody2D</code></td><td>player / enemy movement (manual control)</td></tr>
+<tr><td><code>RigidBody2D</code></td><td>physics objects (automatic simulation)</td></tr>
+<tr><td><code>Area2D</code></td><td>overlap detection, hitboxes, triggers</td></tr>
+<tr><td><code>AnimationPlayer</code></td><td>keyframe animations</td></tr>
+<tr><td><code>Timer</code></td><td>countdowns, cooldowns</td></tr>
+<tr><td><code>AudioStreamPlayer2D</code></td><td>positional 2D sound</td></tr>
+<tr><td><code>TileMapLayer</code></td><td>grid-based level design</td></tr>
+<tr><td><code>CanvasLayer</code></td><td>UI that stays fixed on screen</td></tr>
+<tr><td><code>GPUParticles2D</code></td><td>visual effects, particles</td></tr>
+</table>
+`;
+}
+
+/* ── saved / playlist ────────────────────────────────────────── */
+function renderSaved(){
+  const host=document.getElementById('savedList');host.innerHTML='';
+  if(!savedIds.length){host.appendChild(el('div','empty-state','playlist is empty\ntap the bookmark on any video'));return}
+  savedIds.forEach(id=>{
+    const v=savedItems[id];if(!v)return;
+    const row=el('div','saveditem');
+    const th=el('div','sithumb');
+    if(v.type==='yt'){const img=document.createElement('img');img.src=ytThumb(v.vid);img.alt='';th.appendChild(img)}
+    else th.textContent='TT';
+    row.appendChild(th);
+    const m=el('div','simeta');
+    m.appendChild(el('div','sit',v.title));
+    m.appendChild(el('div','sis',(v.type==='yt'?'youtube':'tiktok')+(v.creator?' / '+v.creator:'')));
+    row.appendChild(m);
+    const acts=el('div','siact');
+    const sh=el('button');sh.appendChild(svgUse('ic-share'));sh.addEventListener('click',e=>{e.stopPropagation();shareUrl(itemUrl(v),v.title)});
+    const del=el('button');del.appendChild(svgUse('ic-trash'));
+    del.addEventListener('click',async e=>{
+      e.stopPropagation();savedIds=savedIds.filter(x=>x!==id);delete savedItems[id];
+      await store.set('gt_saved',{ids:savedIds,items:savedItems});renderSaved();renderFeed();toast('removed');
+    });
+    acts.appendChild(sh);acts.appendChild(del);row.appendChild(acts);
+    row.addEventListener('click',()=>openModal(v));host.appendChild(row);
+  });
+}
+
+/* ── modal ───────────────────────────────────────────────────── */
+function openModal(v){
+  if(PREVIEW){window.open(itemUrl(v),'_blank');return}
+  const f=document.createElement('iframe');
+  f.setAttribute('allow','autoplay; encrypted-media; fullscreen; picture-in-picture');f.setAttribute('allowfullscreen','');
+  f.src=v.type==='yt'?'https://www.youtube-nocookie.com/embed/'+encodeURIComponent(v.vid)+'?autoplay=1&rel=0':'https://www.tiktok.com/embed/v2/'+encodeURIComponent(v.vid);
+  document.getElementById('mhost').innerHTML='';document.getElementById('mhost').appendChild(f);
+  document.getElementById('mtitle').textContent=v.title;
+  if(activeCard){ytCmd(activeCard,'pauseVideo');const st=cardState.get(activeCard);if(st)st.playing=false}
+  document.getElementById('modal').classList.add('open');
+}
+document.getElementById('mclose').addEventListener('click',()=>{document.getElementById('modal').classList.remove('open');document.getElementById('mhost').innerHTML=''});
+
+/* ── share ───────────────────────────────────────────────────── */
+async function shareUrl(url,title){
+  if(navigator.share){try{await navigator.share({title,url});return}catch{}}
+  try{await navigator.clipboard.writeText(url);toast('link copied')}catch{window.prompt('Copy link:',url)}
+}
+
+/* ── add video ───────────────────────────────────────────────── */
+document.getElementById('addBtn').addEventListener('click',async()=>{
+  const msg=document.getElementById('addmsg');
+  const raw=document.getElementById('addUrl').value;
+  const p=parseVideoUrl(raw);
+  msg.className='';
+  if(!p){msg.className='err';msg.textContent='could not parse that url';return}
+  if(p.type==='tt_short'){msg.className='err';msg.textContent='shortened tiktok link — open it in a browser and copy the full url';return}
+  const title=document.getElementById('addTitle').value.trim()||(p.type==='yt'?'YouTube video':'TikTok video');
+  const v={id:p.type+'_'+p.vid+'_'+Date.now(),type:p.type,vid:p.vid,handle:p.handle||null,title,creator:document.getElementById('addCreator').value.trim(),long:document.getElementById('addLong').checked,user:true};
+  userVideos.unshift(v);await store.set('gt_uv',userVideos);
+  document.getElementById('addUrl').value='';document.getElementById('addTitle').value='';document.getElementById('addCreator').value='';document.getElementById('addLong').checked=false;
+  msg.className='ok';msg.textContent='added! rebuilding feed...';
+  buildShuffledFeed();renderFeed();renderUserList();
+  setTimeout(()=>msg.textContent='',3000);
+});
+
+function renderUserList(){
+  const host=document.getElementById('userList');host.innerHTML='';
+  if(!userVideos.length){host.appendChild(el('p','','nothing added yet'));return}
+  userVideos.forEach(v=>{
+    const row=el('div','saveditem');
+    const m=el('div','simeta');
+    m.appendChild(el('div','sit',v.title));
+    m.appendChild(el('div','sis',(v.type==='yt'?'youtube':'tiktok')+(v.long?' / longform':'')));
+    row.appendChild(m);
+    const del=el('button');del.appendChild(svgUse('ic-trash'));
+    del.addEventListener('click',async()=>{userVideos=userVideos.filter(x=>x.id!==v.id);await store.set('gt_uv',userVideos);buildShuffledFeed();renderFeed();renderUserList();toast('removed')});
+    const da=el('div','siact');da.appendChild(del);row.appendChild(da);
+    host.appendChild(row);
+  });
+}
+
+function renderSettings(){
+  const host=document.getElementById('settingsArea');host.innerHTML='';
+  [{k:'showTT',label:'Show TikTok in feed',sub:'TikTok embeds keep their own controls — tap/pause and 2x speed do not apply'},{k:'showLong_dup',label:'Longform toggle (also in feed header)',sub:''}]
+  .forEach(({k,label,sub})=>{
+    if(k==='showLong_dup')return; // already exposed in feed header
+    const key='gt_'+k;
+    let val=JSON.parse(localStorage.getItem(key)||'true');
+    const row=el('div','toggle-row');
+    const tl=el('div','trlabel');
+    tl.appendChild(el('div','',label));
+    if(sub)tl.appendChild(el('div','',sub));
+    const knob=el('div','toggle-knob'+(val?' on':''));
+    row.appendChild(tl);row.appendChild(knob);
+    row.addEventListener('click',()=>{val=!val;localStorage.setItem(key,val);knob.classList.toggle('on',val);toast(label+': '+(val?'on':'off'))});
+    host.appendChild(row);
+  });
+}
+
+/* ── docs ────────────────────────────────────────────────────── */
+let docsFrame=null,currentDoc='https://docs.godotengine.org/en/stable/',docsLoaded=false,learnLoaded=false,recipesLoaded=false;
+function loadDoc(url){
+  currentDoc=url;
+  if(PREVIEW){window.open(url,'_blank');return}
+  if(!docsFrame){docsFrame=document.createElement('iframe');document.getElementById('docsHost').appendChild(docsFrame)}
+  docsFrame.src=url;
+}
+document.querySelectorAll('.chip[data-doc]').forEach(c=>{
+  c.addEventListener('click',()=>{document.querySelectorAll('.chip[data-doc]').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');currentDoc=c.dataset.doc;loadDoc(c.dataset.doc)});
+});
+document.getElementById('docsExt').addEventListener('click',()=>window.open(currentDoc,'_blank'));
+
+/* ── tabs ────────────────────────────────────────────────────── */
+let learnInitDone=false;
+function initLearn(){
+  if(learnInitDone)return;learnInitDone=true;
+  if(PREVIEW){
+    const host=document.getElementById('learnHost');host.style.background='var(--n0)';
+    const p=el('div','pagefall');
+    const img=document.createElement('img');img.src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/godot/godot-original.svg';img.alt='';
+    p.appendChild(img);p.appendChild(el('div','ft','embed blocked in claude preview'));p.appendChild(el('div','fs','works when the file is opened or hosted outside claude'));
+    const b=el('button','fb','open gdquest learn');b.addEventListener('click',()=>window.open('https://gdquest.github.io/learn-gdscript/','_blank'));p.appendChild(b);host.appendChild(p);
+  } else {
+    const f=document.createElement('iframe');f.src='https://gdquest.github.io/learn-gdscript/';f.setAttribute('allow','fullscreen; autoplay');document.getElementById('learnHost').appendChild(f);
+  }
+}
+
+let refInitDone={docs:false,recipes:false};
+function initDocs(){
+  if(refInitDone.docs)return;refInitDone.docs=true;
+  if(PREVIEW){
+    const host=document.getElementById('docsHost');host.style.background='var(--n0)';
+    const p=el('div','pagefall');
+    const img=document.createElement('img');img.src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/godot/godot-original.svg';img.alt='';
+    p.appendChild(img);p.appendChild(el('div','ft','embed blocked in claude preview'));p.appendChild(el('div','fs','docs load fully when hosted outside claude'));
+    const b=el('button','fb','open godot docs');b.addEventListener('click',()=>window.open('https://docs.godotengine.org/en/stable/','_blank'));p.appendChild(b);host.appendChild(p);
+  } else {
+    loadDoc('https://docs.godotengine.org/en/stable/');
+  }
+}
+function initRecipes(){
+  if(refInitDone.recipes)return;refInitDone.recipes=true;
+  if(PREVIEW){
+    const host=document.getElementById('recipesHost');host.style.background='var(--n0)';
+    const p=el('div','pagefall');
+    const img=document.createElement('img');img.src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/godot/godot-original.svg';img.alt='';
+    p.appendChild(img);p.appendChild(el('div','ft','embed blocked in claude preview'));
+    const b=el('button','fb','open godot recipes');b.addEventListener('click',()=>window.open('https://kidscancode.org/godot_recipes/4.x/','_blank'));p.appendChild(b);host.appendChild(p);
+  } else {
+    const f=document.createElement('iframe');f.src='https://kidscancode.org/godot_recipes/4.x/';document.getElementById('recipesHost').appendChild(f);
+  }
+}
+
+function activateSubtab(group, id){
+  document.querySelectorAll('#'+group+'-stabs .stab').forEach(b=>b.classList.toggle('active',b.dataset.stab===id));
+  document.querySelectorAll('#sv-'+group.replace('-stabs','')+'~*').forEach(()=>{});
+  // handle subviews for learn and ref
+  if(group==='learn'){
+    document.getElementById('sv-gdquest').classList.toggle('active',id==='gdquest');
+    document.getElementById('sv-flashcards').classList.toggle('active',id==='flashcards');
+    if(id==='gdquest')initLearn();
+    if(id==='flashcards'){loadFcCards();renderFcStudy()}
+  }
+  if(group==='ref'){
+    document.getElementById('sv-docs').classList.toggle('active',id==='docs');
+    document.getElementById('sv-cheatsheet').classList.toggle('active',id==='cheatsheet');
+    document.getElementById('sv-recipes').classList.toggle('active',id==='recipes');
+    if(id==='docs')initDocs();
+    if(id==='recipes')initRecipes();
+  }
+}
+document.querySelectorAll('#learn-stabs .stab').forEach(b=>b.addEventListener('click',()=>activateSubtab('learn',b.dataset.stab)));
+document.querySelectorAll('#ref-stabs .stab').forEach(b=>b.addEventListener('click',()=>activateSubtab('ref',b.dataset.stab)));
+
+document.querySelectorAll('#tabbar button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('#tabbar button').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const v=btn.dataset.view;
+    document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
+    document.getElementById('view-'+v).classList.add('active');
+    if(v!=='feed'&&activeCard){ytCmd(activeCard,'pauseVideo');const st=cardState.get(activeCard);if(st){st.playing=false;activeCard.classList.add('paused')}}
+    if(v==='feed'&&activeCard){const st=cardState.get(activeCard);if(st&&st.kind==='yt'&&!PREVIEW){ytCmd(activeCard,'playVideo');if(muted)ytCmd(activeCard,'mute');st.playing=true;activeCard.classList.remove('paused')}}
+    if(v==='search')document.getElementById('searchInput').focus();
+  });
+});
+
+document.getElementById('hintsOk').addEventListener('click',async()=>{document.getElementById('hints').classList.remove('show');await store.set('gt_hints',true)});
+document.getElementById('longToggle').addEventListener('click',async()=>{longformOn=!longformOn;document.getElementById('longToggle').textContent='longform: '+(longformOn?'on':'off');document.getElementById('longToggle').classList.toggle('on',longformOn);await store.set('gt_lf',longformOn);renderFeed()});
+
+/* ── init ────────────────────────────────────────────────────── */
+(async function init(){
+  userVideos=await store.get('gt_uv')||[];
+  const sv=await store.get('gt_saved');if(sv){savedIds=sv.ids||[];savedItems=sv.items||{}}
+  longformOn=await store.get('gt_lf')||false;
+  document.getElementById('longToggle').textContent='longform: '+(longformOn?'on':'off');
+  document.getElementById('longToggle').classList.toggle('on',longformOn);
+  const seenHints=await store.get('gt_hints');
+  if(!seenHints)document.getElementById('hints').classList.add('show');
+  buildShuffledFeed();
+  renderFeed();
+  renderSaved();
+  renderUserList();
+  renderSettings();
+  buildCheatsheet();
+  renderSearch('');
+  loadFcCards();
+  if(PREVIEW){
+    const b=el('div','pbanner');
+    const tx=el('span');tx.innerHTML='<b>preview mode:</b> video embeds, docs, and learn app are blocked by the claude sandbox. download godottok.html + icon.png and open or host them.';
+    const x=el('button','','×');x.addEventListener('click',()=>b.remove());
+    b.appendChild(tx);b.appendChild(x);document.body.appendChild(b);
+  }
+})();
+</script></body>
+</html>
