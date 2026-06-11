@@ -1,6 +1,6 @@
 # GodotTok
 
-A TikTok-style video feed for Godot Engine game developers. Vertical swipe feed of Godot and indie dev tutorials from YouTube and TikTok, with the official Godot documentation and the GDQuest Learn GDScript from Zero app built in.
+A TikTok-style video feed for Godot Engine game developers. Vertical swipe feed of Godot and GDScript tutorials from YouTube and TikTok, with a built-in GDScript cheatsheet, flashcards, the official docs, KidsCanCode recipes, and the GDQuest Learn GDScript app — all in one place.
 
 Runs as a Progressive Web App. One HTML file, no backend, no account, no build step.
 
@@ -10,76 +10,126 @@ Runs as a Progressive Web App. One HTML file, no backend, no account, no build s
 
 ## Features
 
-- Vertical snap-scroll video feed, YouTube and TikTok
-- Tap to pause / play (YouTube)
-- Hold for 2× speed (YouTube)
-- Share link, save to private on-device playlist
-- Indie game dev tip cards interleaved in the feed
+**Feed**
+- Vertical snap-scroll video feed — YouTube and TikTok
+- Tap to pause / play
+- Double-tap left third to rewind 10 seconds
+- Double-tap right third to skip forward 10 seconds
+- Hold anywhere for 2× speed
+- Drag the scrubber bar at the bottom of any video to seek
+- Mute / unmute toggle per video
+- Indie game dev tip cards interleaved at random
+- Feed order randomised on every app launch
 - Longform toggle to show or hide longer tutorials
-- Godot official documentation embedded
+- Share or save any video to your on-device playlist
+
+**Search**
+- Live search across all seeded and user-added videos
+- One-tap links to search the Godot docs, GDQuest, and Godot QA for any term
+
+**Learn**
 - GDQuest Learn GDScript From Zero app embedded
+- Flashcard deck with 25 built-in GDScript / Godot cards
+- Study mode with flip animation, skip, and got-it progression
+- Add custom flashcards via the in-app form or directly in the HTML
+
+**Reference**
+- Godot official documentation embedded with quick-nav chips
+- Full inline GDScript cheatsheet: variables, functions, control flow, arrays, signals, nodes, CharacterBody2D movement, input, Vector2, tween, node type table
+- KidsCanCode Godot 4 Recipes embedded
+
+**General**
 - Add any YouTube or TikTok video by pasting a URL
+- On-device playlist / saved videos
 - Nord dark theme
-- Responsive: phone, tablet, desktop, Galaxy Z Fold 5
+- Responsive: phone, tablet, desktop, Galaxy Z Fold
+- Installable as a PWA with a custom app icon
 
 ---
 
 ## Install as an App (PWA)
 
-1. Open the live link above in **Chrome** on Android
-2. Tap the three-dot menu → **Add to Home screen**
-3. Opens fullscreen like a native app, no browser UI
+1. Upload both `Index.html` and `icon.png` to your GitHub repo root
+2. Open the live link in **Chrome** on Android
+3. Chrome menu → **Add to Home screen**
+
+The app opens fullscreen with the custom icon. Both files must be in the repo for the icon to work.
 
 ---
 
 ## Adding Videos
 
-Tap the **+** tab. Paste any YouTube or TikTok URL.
+**In the app:** tap the **+** tab, paste a YouTube or TikTok URL.
 
-Supported YouTube formats: `youtube.com/watch?v=`, `youtu.be/`, `youtube.com/shorts/`
+**In the HTML file:** open `Index.html` in a text editor, search for `ADD VIDEOS HERE`. Copy any existing line and change four values:
 
-Supported TikTok format: full URL containing `@user/video/123...`
+```js
+{id:'yt_YOURID', type:'yt', vid:'YOURID', title:'Title', creator:'Name', long:false},
+```
 
-> If you copy a short `vm.tiktok.com` link from the TikTok app, open it in a browser first and copy the full URL from the address bar.
+- `vid` — YouTube: the 11-character string after `v=` in the URL. TikTok: the number at the end of `@user/video/NUMBER`
+- `type` — `'yt'` for YouTube, `'tt'` for TikTok
+- `long` — `false` for shorts and regular videos, `true` for long tutorials (hidden behind the longform toggle)
+- For TikTok add `handle:'@username'`
 
-Tick **longform** when adding longer tutorials so they stay hidden by default and only appear when you switch the longform toggle on in the feed.
+> TikTok: use the full URL from your browser address bar. Short `vm.tiktok.com` links will not work — open them in a browser first.
 
-Added videos are stored on your device only.
+---
+
+## Adding Custom Flashcards
+
+**In the app:** Learn tab → Flashcards → Add Card.
+
+**In the HTML file:** search for `ADD CUSTOM FLASHCARDS HERE` near the top of the script section:
+
+```js
+const MY_CARDS = [
+  {q:'Your question here', a:'Your answer here'},
+  {q:'What node for physics movement?', a:'CharacterBody2D', code:'move_and_slide()'},
+];
+```
+
+Add a `code` field to show a code block on the back of the card.
 
 ---
 
 ## Self Hosting
 
-The app is a single `Index.html` file.
+The app is a single `Index.html` file plus `icon.png`.
 
 **GitHub Pages (what this repo uses):**
 
 1. Fork this repo
-2. Go to Settings → Pages → Source: main branch, root folder
-3. Your URL will be `https://YOUR-USERNAME.github.io/Godot_Tok/Index.html`
+2. Settings → Pages → Source: main branch, root folder
+3. Your URL: `https://YOUR-USERNAME.github.io/Godot_Tok/Index.html`
 
 **Local:**
 
 ```bash
 python -m http.server 8080
-# then open http://localhost:8080/Index.html
+# open http://localhost:8080/Index.html
 ```
 
-**Docker / nginx:** drop the file into any static file server. No server-side code required.
+**Any static host:** drop both files onto Netlify, Cloudflare Pages, or any nginx / Apache server. No server-side code required.
 
 ---
 
 ## Pre-seeded Content
 
-| Creator | Topic |
+| Creator | Type |
 |---|---|
-| Brackeys | Godot 4 beginner series |
-| GDQuest | GDScript patterns and tips |
-| Clear Code | Godot 4 introduction |
-| GodotCon 2025 | Official talks and workshops |
-| FencerDevLog | 3D particle effects |
-
-Add your own channels and videos via the + tab.
+| Brackeys | Godot 4 beginner series (longform) |
+| Clear Code | Ultimate Godot 4 introduction (longform) |
+| GDQuest | GDScript tips and roadmap |
+| Zenva | Godot 4.6 news, AI and Godot |
+| DevWorm | Resources vs Dictionaries |
+| Bitlytic | Disabling nodes tip |
+| DeveloperEzra | Procedural dungeon generation |
+| Chap.C Creates | 3D pathfinding |
+| GodotCon 2025 | Official talks — C#, OS dev, plugins, web |
+| FencerDevLog | 3D particle trails |
+| @godot_tutorial | TikTok tips |
+| Red Fools Studio | Full 2025 beginner course (longform) |
 
 ---
 
@@ -87,17 +137,20 @@ Add your own channels and videos via the + tab.
 
 - Plain HTML + CSS + vanilla JavaScript
 - No framework, no build step, no dependencies
-- YouTube IFrame postMessage API for tap-to-pause and 2× speed
-- Browser localStorage for playlists and user-added videos
+- YouTube IFrame postMessage API — tap-to-pause, 2× speed, seek, scrubber via `infoDelivery` events
+- Fisher-Yates shuffle on app launch for feed randomisation
+- Browser localStorage for playlists, user videos, and custom flashcards
 - Responsive layout: bottom nav on mobile, side rail on desktop
 
 ---
 
 ## Credits
 
-- [GDQuest](https://gdquest.github.io/learn-gdscript/) — Learn GDScript From Zero, free and open source (CC BY 4.0)
-- [Godot Engine](https://godotengine.org) — documentation and logo (CC BY 4.0)
-- Brackeys, Clear Code, GDQuest, GodotCon, FencerDevLog — seeded video content
+- [GDQuest](https://gdquest.github.io/learn-gdscript/) — Learn GDScript From Zero, CC BY 4.0
+- [Godot Engine](https://godotengine.org) — documentation (CC BY 4.0)
+- [KidsCanCode](https://kidscancode.org/godot_recipes/4.x/) — Godot 4 Recipes
+- Godot logo: Andrea Calabrò / Godot Foundation, CC BY 4.0
+- App icon: AI-generated, Nord colour palette
 
 ---
 
@@ -109,29 +162,21 @@ MIT
 
 ## Roadmap
 
-Things to add, roughly in priority order.
-
-**More pre-seeded videos**
-Wider coverage of the Godot ecosystem — HeartBeast, Bitlytic, Game Endeavor, DevWorm, official GodotCon archives, and short-form tips from TikTok creators. Categorised by topic so the tag filter actually has density.
+**Offline mode / service worker**
+Cache the app shell, tip cards, cheatsheet, and flashcards locally so everything except video playback works without a connection.
 
 **In-browser GDScript workspace**
-A lightweight code editor tab with syntax highlighting for GDScript. Useful for sketching out logic, testing snippets, and following along with tutorials without switching apps. Likely built on CodeMirror or a plain textarea with a Fira Code font and Nord colours to start.
-
-**Flashcards and tests**
-Spaced-repetition flashcards covering GDScript syntax, common node types, signals, physics layers, and Godot-specific patterns. A quick multiple-choice quiz mode at the end of a session. Deck stored locally so progress persists between sessions.
-
-**GDScript cheatsheet**
-A single-screen quick reference: variable types, built-in functions, node lifecycle methods, common Vector2 / Vector3 operations, signal syntax. Faster than opening the docs for things you look up ten times a day.
-
-**Offline mode**
-Full service worker so the app shell, tip cards, cheatsheet, and any cached docs pages load without a connection. Videos will still need the internet but everything else should work on a plane.
-
-**Devlog RSS feed**
-Pull recent posts from indie Godot devlogs (itch.io, personal blogs) into a read-later list. Good for passive learning and staying connected to what people are actually shipping.
+A lightweight code editor tab with syntax highlighting for sketching logic and following along with tutorials without switching apps.
 
 **Keyboard shortcuts for desktop**
-Space to pause, arrow keys to skip between videos, F for fullscreen, M to mute. The mobile gestures already work; desktop needs the same parity.
+Space to pause, arrow keys to navigate, F for fullscreen, M to mute.
+
+**Spaced repetition for flashcards**
+Track which cards you struggled with and surface them more often using a simple SM-2 algorithm.
+
+**Devlog RSS feed**
+Pull recent posts from indie Godot devlogs into a read-later list.
 
 ---
 
-*Pull requests welcome. If you add something, keep it as a single HTML file with no build step.*
+*Pull requests welcome. Keep it as a single HTML file with no build step.*
