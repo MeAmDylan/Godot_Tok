@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2E3440">
+<link rel="manifest" href='data:application/manifest+json,{"name":"GodotTok","short_name":"GodotTok","display":"standalone","background_color":"%232E3440","theme_color":"%232E3440","start_url":"."}'>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2064%2064%22%3E%3Cpath%20fill%3D%22%23478CBF%22%20d%3D%22M16%209%20C8%2010%203%2016%203%2024%20C3%2033%205%2041%209%2046%20C14%2052%2022%2055%2032%2055%20C42%2055%2050%2052%2055%2046%20C59%2041%2061%2033%2061%2024%20C61%2016%2056%2010%2048%209%20L32%2014%20Z%22%2F%3E%3Ccircle%20fill%3D%22%23FFFFFF%22%20cx%3D%2220%22%20cy%3D%2228%22%20r%3D%2210%22%2F%3E%3Ccircle%20fill%3D%22%23FFFFFF%22%20cx%3D%2244%22%20cy%3D%2228%22%20r%3D%2210%22%2F%3E%3Ccircle%20fill%3D%22%23414042%22%20cx%3D%2223%22%20cy%3D%2229%22%20r%3D%224%22%2F%3E%3Ccircle%20fill%3D%22%23414042%22%20cx%3D%2241%22%20cy%3D%2229%22%20r%3D%224%22%2F%3E%3Crect%20fill%3D%22%23414042%22%20x%3D%2230%22%20y%3D%2230%22%20width%3D%224%22%20height%3D%2215%22%20rx%3D%222%22%2F%3E%3Crect%20fill%3D%22%23414042%22%20x%3D%2222%22%20y%3D%2246%22%20width%3D%2220%22%20height%3D%226%22%20rx%3D%223%22%2F%3E%3Ccircle%20fill%3D%22%23414042%22%20cx%3D%2212%22%20cy%3D%2244%22%20r%3D%222.6%22%2F%3E%3Ccircle%20fill%3D%22%23414042%22%20cx%3D%2252%22%20cy%3D%2244%22%20r%3D%222.6%22%2F%3E%3C%2Fsvg%3E">
+<title>GodotTok</title>
+<style>
+:root{
+  --n0:#2E3440; --n1:#3B4252; --n2:#434C5E; --n3:#4C566A;
+  --n4:#D8DEE9; --n5:#E5E9F0; --n6:#ECEFF4;
+  --frost0:#8FBCBB; --frost1:#88C0D0; --frost2:#81A1C1; --frost3:#5E81AC;
+  --red:#BF616A; --orange:#D08770; --yellow:#EBCB8B; --green:#A3BE8C; --purple:#B48EAD;
+  --bg-deep:#242933;
+  --mono:ui-monospace,'Cascadia Code','JetBrains Mono','Fira Code',Menlo,Consolas,monospace;
+  --sans:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --bar:56px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg-deep); color:var(--n5); font-family:var(--sans);
+  height:100vh; height:100dvh; overflow:hidden;
+  -webkit-tap-highlight-color:transparent;
+}
+button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer}
+input,select{font-family:inherit}
+a{color:var(--frost1)}
+svg{display:block}
+
+#app{display:flex;flex-direction:column;height:100%}
+main{flex:1;min-height:0;position:relative}
+.view{position:absolute;inset:0;display:none;flex-direction:column}
+.view.active{display:flex}
+
+/* ---- Tab bar ---- */
+#tabbar{
+  height:var(--bar); flex:none; display:flex; align-items:stretch;
+  background:rgba(46,52,64,.94); border-top:1px solid var(--n2);
+  backdrop-filter:blur(8px); z-index:50;
+}
+#tabbar button{
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2px; color:var(--n3); font-family:var(--mono); font-size:10px;
+}
+#tabbar button.active{color:var(--frost1)}
+#tabbar button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---- Feed ---- */
+#view-feed{background:#000}
+.feed-wrap{flex:1;min-height:0;position:relative;display:flex;justify-content:center;background:var(--bg-deep)}
+#feed{
+  height:100%; width:100%; max-width:520px; background:#000;
+  overflow-y:auto; scroll-snap-type:y mandatory; overscroll-behavior:contain;
+  scrollbar-width:none;
+}
+#feed::-webkit-scrollbar{display:none}
+.card{
+  height:100%; width:100%; scroll-snap-align:start; scroll-snap-stop:always;
+  position:relative; overflow:hidden; background:#000;
+}
+.card iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+.card .scrim{
+  position:absolute;left:0;right:0;bottom:0;height:38%;
+  background:linear-gradient(transparent, rgba(36,41,51,.85)); pointer-events:none;
+}
+.card .meta{
+  position:absolute;left:14px;bottom:16px;right:84px;pointer-events:none;
+  text-shadow:0 1px 4px rgba(0,0,0,.7);
+}
+.meta .title{font-weight:600;font-size:15px;line-height:1.35;color:var(--n6)}
+.meta .creator{font-family:var(--mono);font-size:12px;color:var(--frost1);margin-top:4px}
+.badge{
+  display:inline-block;font-family:var(--mono);font-size:10px;letter-spacing:.5px;
+  padding:2px 7px;border-radius:4px;margin-bottom:7px;
+}
+.badge.long{background:var(--frost3);color:var(--n6)}
+.badge.yt{background:var(--red);color:var(--n6)}
+.badge.tt{background:var(--purple);color:var(--n6)}
+
+/* tap layer */
+.taplayer{
+  position:absolute;inset:0;right:72px;touch-action:pan-y;
+  user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.center-state{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  pointer-events:none;opacity:0;transition:opacity .15s;
+}
+.card.paused .center-state{opacity:1}
+.center-state svg{width:64px;height:64px;fill:rgba(236,239,244,.85);filter:drop-shadow(0 2px 8px rgba(0,0,0,.6))}
+.boost{
+  position:absolute;top:18%;left:50%;transform:translateX(-50%);
+  font-family:var(--mono);font-size:14px;font-weight:700;color:var(--n0);
+  background:var(--yellow);padding:4px 12px;border-radius:20px;
+  opacity:0;transition:opacity .1s;pointer-events:none;
+}
+.card.boosting .boost{opacity:1}
+
+/* rail */
+.rail{
+  position:absolute;right:10px;bottom:24px;display:flex;flex-direction:column;
+  gap:18px;align-items:center;z-index:5;
+}
+.rail button{
+  width:46px;height:46px;border-radius:50%;
+  background:rgba(46,52,64,.72);display:flex;align-items:center;justify-content:center;
+  color:var(--n5);
+}
+.rail button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.rail button.on{color:var(--frost0)}
+.rail button.on svg{fill:var(--frost0)}
+
+/* feed top overlay */
+.feed-top{
+  position:absolute;top:0;left:0;right:0;z-index:6;
+  display:flex;align-items:center;gap:10px;padding:12px 14px;
+  background:linear-gradient(rgba(36,41,51,.8), transparent);
+  pointer-events:none;
+}
+.feed-top>*{pointer-events:auto}
+.logo{font-family:var(--mono);font-size:15px;font-weight:700;color:var(--n6)}
+.logo span{color:var(--frost1)}
+.pill{
+  font-family:var(--mono);font-size:11px;padding:5px 11px;border-radius:20px;
+  border:1px solid var(--n3);color:var(--n4);background:rgba(46,52,64,.6);
+}
+.pill.on{border-color:var(--frost1);color:var(--frost1)}
+.feed-top .spacer{flex:1}
+
+/* tip cards */
+.card.tip{background:var(--n0);display:flex;align-items:center;justify-content:center;padding:28px}
+.tipbox{max-width:420px;width:100%}
+.tipbox .fname{
+  font-family:var(--mono);font-size:12px;color:var(--n3);
+  border-bottom:1px solid var(--n2);padding-bottom:8px;margin-bottom:16px;
+  display:flex;justify-content:space-between;
+}
+.tipbox .fname b{color:var(--green);font-weight:400}
+.tipbox h2{font-size:20px;color:var(--n6);line-height:1.3;margin-bottom:12px}
+.tipbox h2::before{content:"# ";color:var(--frost1);font-family:var(--mono)}
+.tipbox p{font-size:14.5px;line-height:1.65;color:var(--n4)}
+.tipbox code{font-family:var(--mono);font-size:13px;color:var(--frost0);background:var(--n1);padding:1px 5px;border-radius:4px}
+
+/* hints overlay */
+#hints{
+  position:absolute;inset:0;z-index:40;background:rgba(36,41,51,.92);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;
+  font-family:var(--mono);font-size:13px;color:var(--n4);text-align:center;padding:24px;
+}
+#hints div b{color:var(--frost1)}
+#hints button{
+  margin-top:14px;background:var(--frost3);color:var(--n6);
+  padding:10px 26px;border-radius:8px;font-family:var(--mono);font-size:13px;
+}
+
+/* ---- Generic in-app pages ---- */
+.pagebar{
+  flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;
+  background:var(--n0);border-bottom:1px solid var(--n2);overflow-x:auto;
+  scrollbar-width:none;
+}
+.pagebar::-webkit-scrollbar{display:none}
+.pagebar .ptitle{font-family:var(--mono);font-size:13px;color:var(--n6);font-weight:700;white-space:nowrap}
+.chip{
+  font-family:var(--mono);font-size:11px;white-space:nowrap;
+  padding:5px 10px;border-radius:6px;background:var(--n1);color:var(--n4);
+  border:1px solid var(--n2);
+}
+.chip:active,.chip.sel{border-color:var(--frost1);color:var(--frost1)}
+.extbtn{
+  margin-left:auto;display:flex;align-items:center;gap:5px;white-space:nowrap;
+  font-family:var(--mono);font-size:11px;color:var(--frost1);
+  border:1px solid var(--frost3);padding:5px 10px;border-radius:6px;
+}
+.framehost{flex:1;min-height:0;background:var(--n6)}
+.framehost iframe{width:100%;height:100%;border:0}
+.framenote{
+  flex:none;font-family:var(--mono);font-size:10.5px;color:var(--n3);
+  padding:6px 12px;background:var(--n0);border-top:1px solid var(--n2);
+}
+
+/* ---- Saved ---- */
+#view-saved,#view-add{background:var(--bg-deep)}
+.scrollpage{flex:1;min-height:0;overflow-y:auto;padding:16px;max-width:680px;width:100%;margin:0 auto}
+.pagehead{font-family:var(--mono);font-size:16px;color:var(--n6);margin-bottom:4px}
+.pagehead::before{content:"func ";color:var(--frost2)}
+.pagehead::after{content:"():";color:var(--n3)}
+.pagesub{font-size:13px;color:var(--n3);margin-bottom:18px}
+.saveditem{
+  display:flex;gap:12px;background:var(--n0);border:1px solid var(--n2);
+  border-radius:10px;padding:10px;margin-bottom:10px;align-items:center;
+}
+.saveditem .thumb{
+  width:92px;height:56px;flex:none;border-radius:6px;background:var(--n1);
+  object-fit:cover;display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:10px;color:var(--n3);overflow:hidden;
+}
+.saveditem img{width:100%;height:100%;object-fit:cover}
+.saveditem .si-meta{flex:1;min-width:0}
+.saveditem .si-title{font-size:13.5px;color:var(--n5);font-weight:600;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.saveditem .si-sub{font-family:var(--mono);font-size:11px;color:var(--n3);margin-top:3px}
+.saveditem .si-actions{display:flex;flex-direction:column;gap:8px}
+.saveditem .si-actions button{color:var(--n3)}
+.saveditem .si-actions button svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.emptystate{
+  font-family:var(--mono);font-size:13px;color:var(--n3);text-align:center;
+  padding:48px 16px;border:1px dashed var(--n2);border-radius:12px;line-height:1.7;
+}
+
+/* ---- Add ---- */
+.formcard{background:var(--n0);border:1px solid var(--n2);border-radius:12px;padding:16px;margin-bottom:16px}
+.formcard label{display:block;font-family:var(--mono);font-size:11px;color:var(--frost1);margin:12px 0 5px}
+.formcard label:first-child{margin-top:0}
+.formcard input[type=text]{
+  width:100%;background:var(--n1);border:1px solid var(--n2);border-radius:8px;
+  color:var(--n6);padding:10px 12px;font-size:14px;
+}
+.formcard input[type=text]:focus{outline:none;border-color:var(--frost1)}
+.checkrow{display:flex;align-items:center;gap:9px;margin-top:14px;font-size:13.5px;color:var(--n4)}
+.checkrow input{width:17px;height:17px;accent-color:var(--frost3)}
+.primary{
+  width:100%;margin-top:16px;background:var(--frost3);color:var(--n6);
+  padding:12px;border-radius:8px;font-family:var(--mono);font-size:13.5px;font-weight:700;
+}
+.primary:active{background:var(--frost2)}
+#addmsg{font-family:var(--mono);font-size:12px;margin-top:10px;min-height:16px}
+#addmsg.ok{color:var(--green)} #addmsg.err{color:var(--red)}
+details{background:var(--n0);border:1px solid var(--n2);border-radius:12px;margin-bottom:12px}
+details summary{
+  cursor:pointer;list-style:none;padding:13px 16px;
+  font-family:var(--mono);font-size:13px;color:var(--n5);
+}
+details summary::before{content:"+ ";color:var(--frost1)}
+details[open] summary::before{content:"- "}
+details .dbody{padding:0 16px 16px;font-size:13.5px;line-height:1.7;color:var(--n4)}
+details .dbody code{font-family:var(--mono);font-size:12px;color:var(--frost0);background:var(--n1);padding:1px 5px;border-radius:4px}
+details .dbody p{margin-bottom:9px}
+
+/* ---- Modal player ---- */
+#modal{
+  position:fixed;inset:0;z-index:100;background:rgba(36,41,51,.96);
+  display:none;flex-direction:column;
+}
+#modal.open{display:flex}
+#modal .mbar{flex:none;display:flex;align-items:center;padding:10px 14px;gap:10px}
+#modal .mtitle{font-family:var(--mono);font-size:13px;color:var(--n5);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#modal .mclose{color:var(--n4);font-family:var(--mono);font-size:13px;border:1px solid var(--n3);padding:6px 14px;border-radius:6px}
+#modal .mhost{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;padding:0 0 16px}
+#modal iframe{width:100%;max-width:900px;height:100%;border:0;background:#000}
+
+#toast{
+  position:fixed;left:50%;bottom:calc(var(--bar) + 18px);transform:translateX(-50%);
+  background:var(--n1);border:1px solid var(--n3);color:var(--n5);
+  font-family:var(--mono);font-size:12px;padding:9px 16px;border-radius:8px;
+  opacity:0;transition:opacity .2s;pointer-events:none;z-index:120;white-space:nowrap;
+}
+#toast.show{opacity:1}
+
+/* ---- Godot icon / preview mode ---- */
+.glogo{width:22px;height:22px;flex:none}
+.pbanner{
+  position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:200;
+  display:flex;align-items:center;gap:10px;max-width:92vw;
+  background:var(--n1);border:1px solid var(--yellow);border-radius:8px;
+  padding:8px 12px;font-family:var(--mono);font-size:11px;color:var(--n5);line-height:1.5;
+}
+.pbanner b{color:var(--yellow);font-weight:700}
+.pbanner button{color:var(--n4);font-family:var(--mono);font-size:14px;padding:0 4px;flex:none}
+.fallback{
+  position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:12px;background:var(--n0);padding:24px 24px 120px;text-align:center;
+}
+.fb-icon{width:72px;height:72px}
+.fb-t{font-family:var(--mono);font-size:13px;color:var(--n5)}
+.fb-s{font-size:12.5px;color:var(--n3);max-width:300px;line-height:1.6}
+.fb-btn{
+  font-family:var(--mono);font-size:12px;color:var(--n6);
+  background:var(--frost3);padding:9px 18px;border-radius:8px;
+}
+.pagefall{
+  height:100%;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:12px;text-align:center;padding:24px;
+}
+
+/* ---- Desktop / wide ---- */
+@media (min-width:900px){
+  #app{flex-direction:row-reverse}
+  #tabbar{
+    flex-direction:column;height:auto;width:76px;border-top:0;
+    border-right:1px solid var(--n2);justify-content:flex-start;padding-top:14px;gap:6px;
+  }
+  #tabbar button{flex:0 0 60px}
+  #toast{bottom:24px}
+  .feed-wrap{background:var(--bg-deep)}
+  #feed{border-left:1px solid var(--n2);border-right:1px solid var(--n2)}
+}
+</style>
+</head>
+<body>
+<svg style="display:none" aria-hidden="true"><defs><symbol id="gd" viewBox="0 0 64 64">
+<path fill="#478CBF" d="M16 9 C8 10 3 16 3 24 C3 33 5 41 9 46 C14 52 22 55 32 55 C42 55 50 52 55 46 C59 41 61 33 61 24 C61 16 56 10 48 9 L32 14 Z"/>
+<circle fill="#FFFFFF" cx="20" cy="28" r="10"/>
+<circle fill="#FFFFFF" cx="44" cy="28" r="10"/>
+<circle fill="#414042" cx="23" cy="29" r="4"/>
+<circle fill="#414042" cx="41" cy="29" r="4"/>
+<rect fill="#414042" x="30" y="30" width="4" height="15" rx="2"/>
+<rect fill="#414042" x="22" y="46" width="20" height="6" rx="3"/>
+<circle fill="#414042" cx="12" cy="44" r="2.6"/>
+<circle fill="#414042" cx="52" cy="44" r="2.6"/>
+</symbol></defs></svg>
+<div id="app">
+  <main>
+    <!-- FEED -->
+    <section class="view active" id="view-feed">
+      <div class="feed-wrap">
+        <div id="feed"></div>
+        <div class="feed-top">
+          <div class="logo" style="display:flex;align-items:center;gap:8px"><svg class="glogo"><use href="#gd"></use></svg><span style="color:var(--n6)">Godot</span><span style="margin-left:-7px">Tok</span></div>
+          <div class="spacer"></div>
+          <button class="pill" id="longToggle">longform: off</button>
+        </div>
+        <div id="hints" style="display:none">
+          <div><b>tap</b> video to pause / play</div>
+          <div><b>hold</b> for 2x speed (YouTube)</div>
+          <div><b>swipe up</b> for next</div>
+          <div><b>speaker icon</b> to unmute</div>
+          <button id="hintsOk">got it</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- DOCS -->
+    <section class="view" id="view-docs">
+      <div class="pagebar">
+        <span class="ptitle">docs/</span>
+        <button class="chip" data-doc="https://docs.godotengine.org/en/stable/">Home</button>
+        <button class="chip" data-doc="https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html">GDScript</button>
+        <button class="chip" data-doc="https://docs.godotengine.org/en/stable/getting_started/first_2d_game/index.html">First 2D game</button>
+        <button class="chip" data-doc="https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html">Signals</button>
+        <button class="chip" data-doc="https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html">CharacterBody2D</button>
+        <button class="chip" data-doc="https://docs.godotengine.org/en/stable/tutorials/inputs/index.html">Input</button>
+        <button class="chip" data-doc="https://docs.godotengine.org/en/stable/tutorials/shaders/index.html">Shaders</button>
+        <button class="chip" data-doc="https://docs.godotengine.org/en/stable/classes/index.html">All classes</button>
+        <button class="extbtn" id="docsExt">open in browser</button>
+      </div>
+      <div class="framehost" id="docsHost"></div>
+      <div class="framenote">Live docs.godotengine.org. If a page refuses to load in the frame, use "open in browser".</div>
+    </section>
+
+    <!-- LEARN -->
+    <section class="view" id="view-learn">
+      <div class="pagebar">
+        <span class="ptitle">learn_gdscript/</span>
+        <span class="chip" style="border:0;background:none">GDQuest, free and open source</span>
+        <button class="extbtn" id="learnExt">open in browser</button>
+      </div>
+      <div class="framehost" id="learnHost"></div>
+      <div class="framenote">Learn GDScript From Zero runs as a web app (it can take a moment to load). It is built for desktop; on the fold it works best unfolded or in landscape. Desktop downloads: gdquest.itch.io/learn-godot-gdscript</div>
+    </section>
+
+    <!-- SAVED -->
+    <section class="view" id="view-saved">
+      <div class="scrollpage">
+        <div class="pagehead">saved_playlist</div>
+        <div class="pagesub">Private, stored on this device only.</div>
+        <div id="savedList"></div>
+      </div>
+    </section>
+
+    <!-- ADD -->
+    <section class="view" id="view-add">
+      <div class="scrollpage">
+        <div class="pagehead">add_video</div>
+        <div class="pagesub">Paste a YouTube or TikTok link. It is added to your feed on this device.</div>
+
+        <div class="formcard">
+          <label for="addUrl">video url</label>
+          <input type="text" id="addUrl" placeholder="https://youtube.com/watch?v=... or https://www.tiktok.com/@user/video/...">
+          <label for="addTitle">title (optional)</label>
+          <input type="text" id="addTitle" placeholder="Shown on the card">
+          <label for="addCreator">creator (optional)</label>
+          <input type="text" id="addCreator" placeholder="Channel or @handle">
+          <div class="checkrow">
+            <input type="checkbox" id="addLong">
+            <span>Longform video (only shows when the longform toggle is on)</span>
+          </div>
+          <button class="primary" id="addBtn">add to feed</button>
+          <div id="addmsg"></div>
+        </div>
+
+        <details>
+          <summary>how to add videos</summary>
+          <div class="dbody">
+            <p><b>YouTube:</b> paste any normal link: <code>youtube.com/watch?v=...</code>, <code>youtu.be/...</code> or <code>youtube.com/shorts/...</code>. Tap and hold speed control works on these.</p>
+            <p><b>TikTok:</b> in the TikTok app use Share, then Copy link. Paste the full link that looks like <code>tiktok.com/@user/video/123...</code>. If you get a short <code>vm.tiktok.com</code> link, open it in a browser first and copy the full URL from the address bar. TikTok's embedded player keeps its own controls, so tap to pause and 2x hold do not apply to TikToks.</p>
+            <p><b>Longform:</b> tick the box for long tutorials so they stay hidden until you switch the longform toggle on in the feed.</p>
+          </div>
+        </details>
+
+        <details>
+          <summary>your added videos</summary>
+          <div class="dbody"><div id="userList"></div></div>
+        </details>
+
+        <details>
+          <summary>install as an app (PWA)</summary>
+          <div class="dbody">
+            <p>This is one HTML file. To use it as an installable app it needs to be served over HTTPS:</p>
+            <p>1. Put the file in a GitHub repo, enable GitHub Pages, open the URL.</p>
+            <p>2. On the fold: Chrome menu, "Add to Home screen". On desktop Chrome: install icon in the address bar.</p>
+            <p>Self hosting also works, e.g. an nginx container in your Docker stack or <code>python -m http.server</code> on the LAN. Saved playlists and added videos are stored per device in the browser.</p>
+            <p>Godot logo based on the design by Andrea Calabró, CC BY 4.0, Godot Engine project.</p>
+          </div>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <nav id="tabbar">
+    <button data-view="feed" class="active">
+      <svg viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+      <span>feed</span>
+    </button>
+    <button data-view="docs">
+      <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+      <span>docs</span>
+    </button>
+    <button data-view="learn">
+      <svg viewBox="0 0 24 24"><path d="M22 10L12 5 2 10l10 5 10-5z"></path><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"></path></svg>
+      <span>learn</span>
+    </button>
+    <button data-view="saved">
+      <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+      <span>saved</span>
+    </button>
+    <button data-view="add">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>
+      <span>add</span>
+    </button>
+  </nav>
+</div>
+
+<div id="modal">
+  <div class="mbar">
+    <div class="mtitle" id="mtitle"></div>
+    <button class="mclose" id="mclose">close</button>
+  </div>
+  <div class="mhost" id="mhost"></div>
+</div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* Claude artifact preview detection: the sandbox blocks all external
+   iframes (YouTube, TikTok, docs, GDQuest). Outside Claude this is false
+   and every embed loads normally. */
+const PREVIEW = !!window.storage;
+
+/* ================= storage adapter =================
+   Uses Claude artifact storage when present, otherwise
+   browser localStorage (when self hosted), else memory. */
+const mem = {};
+const store = {
+  async get(k){
+    if (window.storage) {
+      try { const r = await window.storage.get(k); return r ? JSON.parse(r.value) : null; }
+      catch(e){ return null; }
+    }
+    try { const v = window.localStorage.getItem(k); return v ? JSON.parse(v) : null; }
+    catch(e){ return (k in mem) ? mem[k] : null; }
+  },
+  async set(k,v){
+    if (window.storage) {
+      try { await window.storage.set(k, JSON.stringify(v)); return; } catch(e){ return; }
+    }
+    try { window.localStorage.setItem(k, JSON.stringify(v)); }
+    catch(e){ mem[k] = v; }
+  }
+};
+
+/* ================= seed content ================= */
+const SEED_VIDEOS = [
+  {id:'yt_UuEqUN98uZo', type:'yt', vid:'UuEqUN98uZo', title:'5 invaluable Godot 4 code patterns (feat. GDQuest)', creator:'PlayWithFurcifer x GDQuest', long:false},
+  {id:'yt_Pm-Gu8d_2Ug', type:'yt', vid:'Pm-Gu8d_2Ug', title:'Should you use Godot 4 already?', creator:'GDQuest', long:false},
+  {id:'yt_LOhfqjmasi0', type:'yt', vid:'LOhfqjmasi0', title:'How to make a video game, full Godot beginner tutorial', creator:'Brackeys', long:true},
+  {id:'yt_e1zJS31tr88', type:'yt', vid:'e1zJS31tr88', title:'How to program in Godot, GDScript in 1 hour', creator:'Brackeys', long:true},
+  {id:'yt_nAh_Kx5Zh5Q', type:'yt', vid:'nAh_Kx5Zh5Q', title:'The ultimate introduction to Godot 4', creator:'Clear Code', long:true}
+];
+
+const TIPS = [
+  {f:'scope.gd', t:'Make smaller games than you think you should', p:'Your first ten games are practice. A finished tiny game teaches more than an abandoned epic: menus, saving, balancing, shipping. Cut your idea in half, then cut it again.'},
+  {f:'game_feel.gd', t:'Juice is cheap and changes everything', p:'Screen shake, hit stop, particles and a sound on every action turn a stiff prototype into something that feels good. In Godot a few lines on the Camera2D and an AnimationPlayer get you most of the way.'},
+  {f:'typing.gd', t:'Use static typing in GDScript', p:'Write <code>var speed: float = 300.0</code> and <code>func hit(damage: int) -> void:</code>. You get real autocomplete, errors at parse time instead of runtime, and faster execution. Free wins.'},
+  {f:'signals.gd', t:'Call down, signal up', p:'Parents may call methods on their children directly. Children should never reach up; they emit signals and let whoever cares connect. This one rule keeps scenes reusable and saves you from spaghetti.'},
+  {f:'git.gd', t:'Version control from day one', p:'<code>git init</code> before you write a line. Ignore the <code>.godot/</code> folder. The first time a refactor goes wrong or a scene file corrupts, one command gets you back.'},
+  {f:'playtest.gd', t:'Watch strangers play, silently', p:'Friends are polite and you explain too much. Hand the build to someone who owes you nothing, say nothing, and write down everywhere they get confused. That list is your real backlog.'},
+  {f:'pixel_art.gd', t:'Pick one pixel density and commit', p:'Choose a tile size (16 or 32) and keep every sprite at the same pixel scale. In project settings set the default texture filter to Nearest and use viewport stretch mode for crisp scaling.'},
+  {f:'slice.gd', t:'Build a vertical slice first', p:'One polished minute of gameplay, real art, real sound, tells you whether the game is fun. Find that out before you build ten levels of content for a loop that does not work.'},
+  {f:'scenes.gd', t:'If you use it twice, make it a scene', p:'Bullets, pickups, enemies, UI panels: anything reused becomes its own scene, instanced where needed. Scenes are Godot prefabs and composition beats one giant scene tree every time.'},
+  {f:'delta.gd', t:'Respect delta time', p:'Multiply movement by <code>delta</code> in <code>_process</code>, or put physics in <code>_physics_process</code> where the step is fixed. Skip this and your game plays at different speeds on different machines.'},
+  {f:'audio.gd', t:'Audio is half the experience', p:'Even rough placeholder sounds beat silence; players forgive simple art far faster than a mute game. Generate quick effects, drop them on AudioStreamPlayers, and balance with audio buses early.'},
+  {f:'marketing.gd', t:'Marketing starts at the prototype', p:'Post short clips of your juiciest moments while you build. An audience grows slowly, so the day your store page goes live should not be the day strangers first hear about your game.'}
+];
+
+/* ================= state ================= */
+let userVideos = [];
+let savedIds = [];
+let savedItems = {};
+let longformOn = false;
+let muted = true;
+let activeCard = null;
+const cardState = new Map();
+
+/* ================= helpers ================= */
+function el(tag, cls, text){
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tm);
+  t._tm = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+function icon(paths){
+  const ns = 'http://www.w3.org/2000/svg';
+  const s = document.createElementNS(ns,'svg');
+  s.setAttribute('viewBox','0 0 24 24');
+  s.innerHTML = paths;
+  return s;
+}
+function gdIcon(cls){
+  const s = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  s.setAttribute('class', cls);
+  s.innerHTML = '<use href="#gd"></use>';
+  return s;
+}
+function pageFallback(hostId, msg, btnText, url){
+  const host = document.getElementById(hostId);
+  host.style.background = 'var(--n0)';
+  const p = el('div','pagefall');
+  p.appendChild(gdIcon('fb-icon'));
+  p.appendChild(el('div','fb-t', msg));
+  p.appendChild(el('div','fb-s','works normally once the file is opened or hosted outside claude'));
+  const b = el('button','fb-btn', btnText);
+  b.addEventListener('click', () => window.open(url, '_blank'));
+  p.appendChild(b);
+  host.appendChild(p);
+}
+const IC = {
+  bookmark:'<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>',
+  share:'<circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"></line><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"></line>',
+  volOn:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M18.5 5.5a9 9 0 0 1 0 13"></path>',
+  volOff:'<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line>',
+  ext:'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line>',
+  trash:'<polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>',
+  play:'<polygon points="6 4 20 12 6 20 6 4"></polygon>'
+};
+
+function itemUrl(it){
+  if (it.type === 'yt') return 'https://www.youtube.com/watch?v=' + it.vid;
+  return 'https://www.tiktok.com/' + (it.handle ? it.handle + '/' : '@video/') + 'video/' + it.vid;
+}
+function itemThumb(it){
+  if (it.type === 'yt') return 'https://i.ytimg.com/vi/' + it.vid + '/hqdefault.jpg';
+  return null;
+}
+
+/* ================= YouTube control ================= */
+function ytCmd(card, func, args){
+  const f = card.querySelector('iframe');
+  if (!f || !f.contentWindow) return;
+  f.contentWindow.postMessage(JSON.stringify({event:'command', func:func, args:args || []}), '*');
+}
+function applyMute(card){
+  if (!card || card.dataset.type !== 'yt') return;
+  ytCmd(card, muted ? 'mute' : 'unMute');
+}
+function playCard(card){
+  const st = cardState.get(card);
+  if (!st || st.kind !== 'yt') return;
+  applyMute(card);
+  ytCmd(card, 'setPlaybackRate', [1]);
+  ytCmd(card, 'playVideo');
+  st.playing = true;
+  card.classList.remove('paused');
+}
+function pauseCard(card){
+  const st = cardState.get(card);
+  if (!st || st.kind !== 'yt') return;
+  ytCmd(card, 'pauseVideo');
+  st.playing = false;
+}
+
+/* ================= feed build ================= */
+function feedItems(){
+  const vids = userVideos.concat(SEED_VIDEOS).filter(v => longformOn || !v.long);
+  const out = [];
+  let tipIdx = 0;
+  vids.forEach((v, i) => {
+    out.push({kind:'video', data:v});
+    if ((i + 1) % 2 === 0 && TIPS.length){
+      out.push({kind:'tip', data:TIPS[tipIdx % TIPS.length]});
+      tipIdx++;
+    }
+  });
+  while (tipIdx < TIPS.length){
+    out.push({kind:'tip', data:TIPS[tipIdx]});
+    tipIdx++;
+  }
+  return out;
+}
+
+function buildVideoCard(v){
+  const card = el('div','card');
+  card.dataset.type = v.type;
+  card.dataset.itemId = v.id;
+
+  if (PREVIEW){
+    const fb = el('div','fallback');
+    fb.appendChild(gdIcon('fb-icon'));
+    fb.appendChild(el('div','fb-t','embed blocked in the claude preview'));
+    fb.appendChild(el('div','fb-s','host or open the downloaded file and this card plays right here, with tap to pause and hold for 2x'));
+    const go = el('button','fb-btn', v.type === 'yt' ? 'watch on youtube' : 'watch on tiktok');
+    go.addEventListener('click', () => window.open(itemUrl(v), '_blank'));
+    fb.appendChild(go);
+    card.appendChild(fb);
+  } else {
+    const frame = document.createElement('iframe');
+    frame.setAttribute('allow','autoplay; encrypted-media; picture-in-picture; fullscreen');
+    frame.setAttribute('allowfullscreen','');
+    frame.loading = 'lazy';
+    if (v.type === 'yt'){
+      frame.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(v.vid)
+        + '?enablejsapi=1&playsinline=1&controls=0&rel=0&modestbranding=1&iv_load_policy=3&fs=0&mute=1';
+    } else {
+      frame.src = 'https://www.tiktok.com/embed/v2/' + encodeURIComponent(v.vid);
+    }
+    card.appendChild(frame);
+  }
+
+  card.appendChild(el('div','scrim'));
+
+  const meta = el('div','meta');
+  const badges = el('div');
+  badges.appendChild(el('span','badge ' + v.type, v.type === 'yt' ? 'YOUTUBE' : 'TIKTOK'));
+  if (v.long) badges.appendChild(document.createTextNode(' '));
+  if (v.long) badges.appendChild(el('span','badge long','LONGFORM'));
+  meta.appendChild(badges);
+  meta.appendChild(el('div','title', v.title));
+  if (v.creator) meta.appendChild(el('div','creator', v.creator));
+  card.appendChild(meta);
+
+  /* rail */
+  const rail = el('div','rail');
+
+  const bSave = el('button');
+  bSave.appendChild(icon(IC.bookmark));
+  if (savedIds.indexOf(v.id) >= 0) bSave.classList.add('on');
+  bSave.addEventListener('click', async () => {
+    const i = savedIds.indexOf(v.id);
+    if (i >= 0){ savedIds.splice(i,1); delete savedItems[v.id]; bSave.classList.remove('on'); toast('removed from playlist'); }
+    else { savedIds.push(v.id); savedItems[v.id] = v; bSave.classList.add('on'); toast('saved to playlist'); }
+    await store.set('gt_saved', {ids:savedIds, items:savedItems});
+    renderSaved();
+  });
+  rail.appendChild(bSave);
+
+  const bShare = el('button');
+  bShare.appendChild(icon(IC.share));
+  bShare.addEventListener('click', () => shareUrl(itemUrl(v), v.title));
+  rail.appendChild(bShare);
+
+  if (v.type === 'yt' && !PREVIEW){
+    const bMute = el('button');
+    bMute.appendChild(icon(muted ? IC.volOff : IC.volOn));
+    bMute.addEventListener('click', () => {
+      muted = !muted;
+      document.querySelectorAll('.rail .mutebtn').forEach(b => {
+        b.innerHTML = ''; b.appendChild(icon(muted ? IC.volOff : IC.volOn));
+      });
+      if (activeCard) applyMute(activeCard);
+      toast(muted ? 'muted' : 'sound on');
+    });
+    bMute.classList.add('mutebtn');
+    rail.appendChild(bMute);
+  }
+
+  const bExt = el('button');
+  bExt.appendChild(icon(IC.ext));
+  bExt.addEventListener('click', () => window.open(itemUrl(v), '_blank'));
+  rail.appendChild(bExt);
+
+  card.appendChild(rail);
+
+  if (v.type === 'yt' && !PREVIEW){
+    const tap = el('div','taplayer');
+    attachGestures(card, tap);
+    card.appendChild(tap);
+
+    const cs = el('div','center-state');
+    cs.appendChild(icon(IC.play));
+    cs.firstChild.style.fill = 'rgba(236,239,244,.85)';
+    cs.firstChild.setAttribute('stroke','none');
+    card.appendChild(cs);
+
+    card.appendChild(el('div','boost','2x'));
+  }
+
+  cardState.set(card, {kind: PREVIEW ? 'fb' : (v.type === 'yt' ? 'yt' : 'tt'), playing:false});
+  return card;
+}
+
+function buildTipCard(tip, n){
+  const card = el('div','card tip');
+  const box = el('div','tipbox');
+  const fn = el('div','fname');
+  const left = el('span'); left.innerHTML = 'res://tips/<b>' + tip.f + '</b>';
+  fn.appendChild(left);
+  fn.appendChild(el('span','', 'dev tip ' + n));
+  box.appendChild(fn);
+  box.appendChild(el('h2','',tip.t));
+  const p = el('p');
+  p.innerHTML = tip.p; /* trusted local strings only */
+  box.appendChild(p);
+  card.appendChild(box);
+  cardState.set(card, {kind:'tip'});
+  return card;
+}
+
+let observer = null;
+function renderFeed(){
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '';
+  cardState.clear();
+  activeCard = null;
+  if (observer) observer.disconnect();
+
+  const items = feedItems();
+  let tipN = 0;
+  items.forEach(it => {
+    if (it.kind === 'video') feed.appendChild(buildVideoCard(it.data));
+    else { tipN++; feed.appendChild(buildTipCard(it.data, tipN)); }
+  });
+
+  observer = new IntersectionObserver(entries => {
+    entries.forEach(en => {
+      const card = en.target;
+      if (en.intersectionRatio >= 0.6){
+        if (activeCard && activeCard !== card) pauseCard(activeCard);
+        activeCard = card;
+        playCard(card);
+      } else if (card === activeCard && en.intersectionRatio < 0.4){
+        pauseCard(card);
+      } else if (card !== activeCard){
+        pauseCard(card);
+      }
+    });
+  }, {root: feed, threshold:[0.4, 0.6]});
+
+  feed.querySelectorAll('.card').forEach(c => observer.observe(c));
+}
+
+/* ================= gestures: tap pause, hold 2x ================= */
+function attachGestures(card, layer){
+  let pd = null;
+  layer.addEventListener('contextmenu', e => e.preventDefault());
+  layer.addEventListener('pointerdown', e => {
+    pd = {x:e.clientX, y:e.clientY, hold:false};
+    pd.timer = setTimeout(() => {
+      if (!pd) return;
+      pd.hold = true;
+      card.classList.add('boosting');
+      ytCmd(card, 'setPlaybackRate', [2]);
+    }, 260);
+  });
+  layer.addEventListener('pointermove', e => {
+    if (!pd) return;
+    if (Math.hypot(e.clientX - pd.x, e.clientY - pd.y) > 12){
+      clearTimeout(pd.timer);
+      if (pd.hold){ card.classList.remove('boosting'); ytCmd(card,'setPlaybackRate',[1]); }
+      pd = null;
+    }
+  });
+  function up(){
+    if (!pd) return;
+    clearTimeout(pd.timer);
+    if (pd.hold){
+      card.classList.remove('boosting');
+      ytCmd(card,'setPlaybackRate',[1]);
+    } else {
+      const st = cardState.get(card);
+      if (st.playing){ pauseCard(card); card.classList.add('paused'); }
+      else { playCard(card); }
+    }
+    pd = null;
+  }
+  layer.addEventListener('pointerup', up);
+  layer.addEventListener('pointercancel', () => {
+    if (!pd) return;
+    clearTimeout(pd.timer);
+    if (pd.hold){ card.classList.remove('boosting'); ytCmd(card,'setPlaybackRate',[1]); }
+    pd = null;
+  });
+}
+
+/* ================= share ================= */
+async function shareUrl(url, title){
+  if (navigator.share){
+    try { await navigator.share({title:title, url:url}); return; } catch(e){ /* cancelled */ }
+  }
+  try {
+    await navigator.clipboard.writeText(url);
+    toast('link copied');
+  } catch(e){
+    window.prompt('Copy link:', url);
+  }
+}
+
+/* ================= saved view ================= */
+function renderSaved(){
+  const host = document.getElementById('savedList');
+  host.innerHTML = '';
+  if (!savedIds.length){
+    const e = el('div','emptystate');
+    e.innerHTML = 'playlist is empty<br>tap the bookmark on any video in the feed';
+    host.appendChild(e);
+    return;
+  }
+  savedIds.forEach(id => {
+    const v = savedItems[id];
+    if (!v) return;
+    const row = el('div','saveditem');
+    const th = el('div','thumb');
+    const turl = itemThumb(v);
+    if (turl){ const img = document.createElement('img'); img.src = turl; img.alt=''; th.appendChild(img); }
+    else th.textContent = 'tiktok';
+    row.appendChild(th);
+
+    const m = el('div','si-meta');
+    m.appendChild(el('div','si-title', v.title));
+    m.appendChild(el('div','si-sub', (v.type === 'yt' ? 'youtube' : 'tiktok') + (v.creator ? ' / ' + v.creator : '')));
+    row.appendChild(m);
+
+    const acts = el('div','si-actions');
+    const del = el('button'); del.appendChild(icon(IC.trash));
+    del.addEventListener('click', async e => {
+      e.stopPropagation();
+      savedIds = savedIds.filter(x => x !== id);
+      delete savedItems[id];
+      await store.set('gt_saved', {ids:savedIds, items:savedItems});
+      renderSaved(); renderFeed();
+      toast('removed');
+    });
+    const sh = el('button'); sh.appendChild(icon(IC.share));
+    sh.addEventListener('click', e => { e.stopPropagation(); shareUrl(itemUrl(v), v.title); });
+    acts.appendChild(sh); acts.appendChild(del);
+    row.appendChild(acts);
+
+    row.addEventListener('click', () => openModal(v));
+    host.appendChild(row);
+  });
+}
+
+/* ================= modal player ================= */
+function openModal(v){
+  if (PREVIEW){ window.open(itemUrl(v), '_blank'); return; }
+  const modal = document.getElementById('modal');
+  const host = document.getElementById('mhost');
+  document.getElementById('mtitle').textContent = v.title;
+  host.innerHTML = '';
+  const f = document.createElement('iframe');
+  f.setAttribute('allow','autoplay; encrypted-media; fullscreen; picture-in-picture');
+  f.setAttribute('allowfullscreen','');
+  if (v.type === 'yt'){
+    f.src = 'https://www.youtube-nocookie.com/embed/' + encodeURIComponent(v.vid) + '?autoplay=1&playsinline=1&rel=0';
+  } else {
+    f.src = 'https://www.tiktok.com/embed/v2/' + encodeURIComponent(v.vid);
+  }
+  host.appendChild(f);
+  if (activeCard) pauseCard(activeCard);
+  modal.classList.add('open');
+}
+document.getElementById('mclose').addEventListener('click', () => {
+  document.getElementById('modal').classList.remove('open');
+  document.getElementById('mhost').innerHTML = '';
+});
+
+/* ================= add video ================= */
+function parseVideoUrl(raw){
+  let u;
+  try { u = new URL(raw.trim()); } catch(e){ return null; }
+  const h = u.hostname.replace(/^www\./,'');
+  if (h === 'youtu.be'){
+    const id = u.pathname.split('/')[1];
+    if (id) return {type:'yt', vid:id};
+  }
+  if (h.endsWith('youtube.com')){
+    if (u.pathname === '/watch' && u.searchParams.get('v')) return {type:'yt', vid:u.searchParams.get('v')};
+    const m = u.pathname.match(/^\/(shorts|embed|live)\/([A-Za-z0-9_-]{6,})/);
+    if (m) return {type:'yt', vid:m[2]};
+  }
+  if (h.endsWith('tiktok.com')){
+    if (h.startsWith('vm.') || h.startsWith('vt.')) return {type:'tt_short'};
+    const m = u.pathname.match(/\/(@[^/]+)\/video\/(\d+)/);
+    if (m) return {type:'tt', vid:m[2], handle:m[1]};
+    const m2 = u.pathname.match(/\/video\/(\d+)/);
+    if (m2) return {type:'tt', vid:m2[1]};
+  }
+  return null;
+}
+
+document.getElementById('addBtn').addEventListener('click', async () => {
+  const msg = document.getElementById('addmsg');
+  const raw = document.getElementById('addUrl').value;
+  const p = parseVideoUrl(raw);
+  msg.className = '';
+  if (!p){
+    msg.classList.add('err');
+    msg.textContent = 'could not parse that url, see "how to add videos" below';
+    return;
+  }
+  if (p.type === 'tt_short'){
+    msg.classList.add('err');
+    msg.textContent = 'that is a shortened tiktok link, open it in a browser and paste the full @user/video/... url';
+    return;
+  }
+  const title = document.getElementById('addTitle').value.trim()
+    || (p.type === 'yt' ? 'YouTube video' : 'TikTok video');
+  const v = {
+    id: p.type + '_' + p.vid + '_' + Date.now(),
+    type: p.type, vid: p.vid, handle: p.handle || null,
+    title: title,
+    creator: document.getElementById('addCreator').value.trim(),
+    long: document.getElementById('addLong').checked,
+    user: true
+  };
+  userVideos.unshift(v);
+  await store.set('gt_userVideos', userVideos);
+  document.getElementById('addUrl').value = '';
+  document.getElementById('addTitle').value = '';
+  document.getElementById('addCreator').value = '';
+  document.getElementById('addLong').checked = false;
+  msg.classList.add('ok');
+  msg.textContent = 'added. it is at the top of your feed' + (v.long && !longformOn ? ' (switch longform on to see it)' : '');
+  renderFeed(); renderUserList();
+});
+
+function renderUserList(){
+  const host = document.getElementById('userList');
+  host.innerHTML = '';
+  if (!userVideos.length){
+    host.appendChild(el('p','', 'nothing added yet'));
+    return;
+  }
+  userVideos.forEach(v => {
+    const row = el('div','saveditem');
+    const m = el('div','si-meta');
+    m.appendChild(el('div','si-title', v.title));
+    m.appendChild(el('div','si-sub', (v.type === 'yt' ? 'youtube' : 'tiktok') + (v.long ? ' / longform' : '')));
+    row.appendChild(m);
+    const acts = el('div','si-actions');
+    const del = el('button'); del.appendChild(icon(IC.trash));
+    del.addEventListener('click', async () => {
+      userVideos = userVideos.filter(x => x.id !== v.id);
+      await store.set('gt_userVideos', userVideos);
+      renderUserList(); renderFeed();
+      toast('removed from feed');
+    });
+    acts.appendChild(del);
+    row.appendChild(acts);
+    host.appendChild(row);
+  });
+}
+
+/* ================= tabs ================= */
+let docsLoaded = false, learnLoaded = false;
+document.querySelectorAll('#tabbar button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#tabbar button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const v = btn.dataset.view;
+    document.querySelectorAll('.view').forEach(s => s.classList.remove('active'));
+    document.getElementById('view-' + v).classList.add('active');
+
+    if (v !== 'feed' && activeCard) pauseCard(activeCard);
+    if (v === 'feed' && activeCard) playCard(activeCard);
+
+    if (v === 'docs' && !docsLoaded){
+      if (PREVIEW) pageFallback('docsHost','the claude preview blocks framing docs.godotengine.org','open the godot docs','https://docs.godotengine.org/en/stable/');
+      else loadDoc('https://docs.godotengine.org/en/stable/');
+      docsLoaded = true;
+    }
+    if (v === 'learn' && !learnLoaded){
+      if (PREVIEW) pageFallback('learnHost','the claude preview blocks framing the gdquest app','open learn gdscript from zero','https://gdquest.github.io/learn-gdscript/');
+      else {
+        const f = document.createElement('iframe');
+        f.src = 'https://gdquest.github.io/learn-gdscript/';
+        f.setAttribute('allow','fullscreen; autoplay');
+        document.getElementById('learnHost').appendChild(f);
+      }
+      learnLoaded = true;
+    }
+  });
+});
+
+let docFrame = null, currentDoc = 'https://docs.godotengine.org/en/stable/';
+function loadDoc(url){
+  currentDoc = url;
+  const host = document.getElementById('docsHost');
+  if (!docFrame){
+    docFrame = document.createElement('iframe');
+    host.appendChild(docFrame);
+  }
+  docFrame.src = url;
+}
+document.querySelectorAll('.chip[data-doc]').forEach(c => {
+  c.addEventListener('click', () => {
+    document.querySelectorAll('.chip[data-doc]').forEach(x => x.classList.remove('sel'));
+    c.classList.add('sel');
+    currentDoc = c.dataset.doc;
+    if (PREVIEW) window.open(c.dataset.doc, '_blank');
+    else loadDoc(c.dataset.doc);
+  });
+});
+document.getElementById('docsExt').addEventListener('click', () => window.open(currentDoc, '_blank'));
+document.getElementById('learnExt').addEventListener('click', () => window.open('https://gdquest.github.io/learn-gdscript/', '_blank'));
+
+/* ================= longform toggle ================= */
+const longBtn = document.getElementById('longToggle');
+longBtn.addEventListener('click', async () => {
+  longformOn = !longformOn;
+  longBtn.textContent = 'longform: ' + (longformOn ? 'on' : 'off');
+  longBtn.classList.toggle('on', longformOn);
+  await store.set('gt_longform', longformOn);
+  renderFeed();
+});
+
+/* ================= hints ================= */
+document.getElementById('hintsOk').addEventListener('click', async () => {
+  document.getElementById('hints').style.display = 'none';
+  await store.set('gt_hints', true);
+});
+
+/* ================= init ================= */
+(async function init(){
+  userVideos = (await store.get('gt_userVideos')) || [];
+  const sv = await store.get('gt_saved');
+  if (sv){ savedIds = sv.ids || []; savedItems = sv.items || {}; }
+  longformOn = (await store.get('gt_longform')) || false;
+  longBtn.textContent = 'longform: ' + (longformOn ? 'on' : 'off');
+  longBtn.classList.toggle('on', longformOn);
+  const seen = await store.get('gt_hints');
+  if (!seen) document.getElementById('hints').style.display = 'flex';
+  renderFeed();
+  renderSaved();
+  renderUserList();
+  if (PREVIEW){
+    const b = el('div','pbanner');
+    const tx = el('span');
+    tx.innerHTML = '<b>preview mode:</b> the claude sandbox blocks external embeds. download godottok.html, then open or host it for the full app.';
+    const x = el('button','', 'x');
+    x.addEventListener('click', () => b.remove());
+    b.appendChild(tx); b.appendChild(x);
+    document.body.appendChild(b);
+  }
+})();
+</script>
+</body>
+</html>
