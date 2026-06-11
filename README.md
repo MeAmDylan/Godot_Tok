@@ -11,7 +11,7 @@ Runs as a Progressive Web App. One HTML file, no backend, no account, no build s
 ## Features
 
 **Feed**
-- Vertical snap-scroll video feed — YouTube and TikTok
+- Vertical snap-scroll video feed YouTube and TikTok.
 - Tap to pause / play
 - Double-tap left third to rewind 10 seconds
 - Double-tap right third to skip forward 10 seconds
@@ -24,13 +24,13 @@ Runs as a Progressive Web App. One HTML file, no backend, no account, no build s
 - Share or save any video to your on-device playlist
 
 **Search**
-- Live search across all seeded and user-added videos
-- One-tap links to search the Godot docs, GDQuest, and Godot QA for any term
+- Live search across all seeded and user added videos
+- One tap links to search the Godot docs, GDQuest, and Godot QA for any term
 
 **Learn**
 - GDQuest Learn GDScript From Zero app embedded
-- Flashcard deck with 25 built-in GDScript / Godot cards
-- Study mode with flip animation, skip, and got-it progression
+- Flashcard deck with 25 built in GDScript / Godot cards
+- Study mode with flip animation, skip, and got it progression
 - Add custom flashcards via the in-app form or directly in the HTML
 
 **Reference**
@@ -53,7 +53,7 @@ Runs as a Progressive Web App. One HTML file, no backend, no account, no build s
 2. Open the live link in **Chrome** on Android
 3. Chrome menu → **Add to Home screen**
 
-The app opens fullscreen with the custom icon. Both files must be in the repo for the icon to work.
+The app opens fullscreen with the icon. Both files must be in the repo for the icon to work.
 
 ---
 
