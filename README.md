@@ -1,6 +1,6 @@
 # GodotTok
 
-A TikTok-style video feed for Godot Engine game developers. Vertical swipe feed of Godot and GDScript tutorials from YouTube and TikTok, with a built-in GDScript cheatsheet, flashcards, the official docs, KidsCanCode recipes, and the GDQuest Learn GDScript app — all in one place.
+A TikTok style video feed for Godot Engine game developers. Vertical swipe feed of Godot and GDScript tutorials from YouTube and TikTok, with a built in GDScript cheatsheet, flashcards, the official docs, KidsCanCode recipes, and the GDQuest Learn GDScript app all in one place.
 
 Runs as a Progressive Web App. One HTML file, no backend, no account, no build step.
 
@@ -150,7 +150,8 @@ python -m http.server 8080
 - [Godot Engine](https://godotengine.org) — documentation (CC BY 4.0)
 - [KidsCanCode](https://kidscancode.org/godot_recipes/4.x/) — Godot 4 Recipes
 - Godot logo: Andrea Calabrò / Godot Foundation, CC BY 4.0
-- App icon: AI-generated, Nord colour palette
+- App icon: AI generated, Nord colour palette Godot icon. THIS WILL BE REPLACED WITH REAL ART. (currnetly a placeholder.
+- App made by me, with assistnce in generated code.
 
 ---
 
