@@ -32,6 +32,7 @@
 <symbol id="ic-menu" viewBox="0 0 24 24"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></symbol>
 <symbol id="ic-install" viewBox="0 0 24 24"><path d="M12 3v12"/><polyline points="7 10 12 15 17 10"/><path d="M5 21h14"/></symbol>
 <symbol id="ic-refresh" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/></symbol>
+<symbol id="ic-code" viewBox="0 0 24 24"><polyline points="8 9 4 12 8 15"/><polyline points="16 9 20 12 16 15"/><line x1="14" y1="5" x2="10" y2="19"/></symbol>
 </defs></svg>
 
 <div id="app">
@@ -173,6 +174,11 @@
       </div>
     </section>
 
+    <!-- CODE LIBRARY -->
+    <section class="view" id="view-library">
+      <div class="library-page" id="libraryApp"></div>
+    </section>
+
     <!-- SAVED -->
     <section class="view" id="view-saved">
       <div class="scrollpage">
@@ -243,9 +249,14 @@
     <button type="button" data-view="search"><svg aria-hidden="true"><use href="#ic-search"/></svg><span>search</span></button>
     <button type="button" data-view="learn"><svg aria-hidden="true"><use href="#ic-learn"/></svg><span>learn</span></button>
     <button type="button" data-view="ref"><svg aria-hidden="true"><use href="#ic-book"/></svg><span>reference</span></button>
-    <button type="button" data-view="saved"><svg aria-hidden="true"><use href="#ic-saved"/></svg><span>saved</span></button>
-    <button type="button" data-view="add"><svg aria-hidden="true"><use href="#ic-add"/></svg><span>add video</span></button>
+    <button type="button" data-view="library"><svg aria-hidden="true"><use href="#ic-code"/></svg><span>code library</span></button>
+    <button type="button" data-view="saved" class="nav-utility"><svg aria-hidden="true"><use href="#ic-saved"/></svg><span>saved</span></button>
+    <button type="button" data-view="add" class="nav-utility"><svg aria-hidden="true"><use href="#ic-add"/></svg><span>add video</span></button>
   </nav>
+  <div id="utilitybar" aria-label="Video utilities">
+    <button type="button" data-view="saved" aria-label="Open saved videos"><svg aria-hidden="true"><use href="#ic-saved"/></svg></button>
+    <button type="button" data-view="add" aria-label="Add a video"><svg aria-hidden="true"><use href="#ic-add"/></svg></button>
+  </div>
 </div>
 
 <div id="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle" aria-hidden="true">
@@ -255,5 +266,12 @@
   </div>
   <div class="mhost" id="mhost"></div>
 </div>
-<div id="toast" role="status" aria-live="polite"></div><script src="js/data/learning.js"></script><script src="js/learning-ui.js"></script><script src="js/app.js"></script></body>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="js/data/learning.js"></script>
+<script src="js/data/library.js"></script>
+<script src="js/learning-ui.js"></script>
+<script src="js/library-ui.js"></script>
+<script src="js/search.js"></script>
+<script src="js/app.js"></script>
+</body>
 </html>

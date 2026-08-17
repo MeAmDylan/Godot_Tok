@@ -234,7 +234,7 @@
       if(guidesRendered)return;const host=document.getElementById("guidesApp");host.innerHTML="";
       const head=el("div","learning-head"),copy=el("div","");copy.appendChild(el("h2","","Christophe's Godot guides"));copy.appendChild(el("p","","Free interactive guides and downloadable cheatsheets from Christophe's itch.io catalogue."));head.appendChild(copy);host.appendChild(head);
       host.appendChild(el("div","source-note","These itch.io pages do not permit third-party framing. GodotTok shows their catalogue information and opens the selected official page only after you choose it. Their code is not copied into GodotTok's sourced code collection."));
-      const grid=el("div","guide-grid");data.guides.forEach(guide=>{const card=el("article","guide-card");card.appendChild(el("div","guide-kind",guide.kind+" | "+guide.version));card.appendChild(el("h3","",guide.title));card.appendChild(el("p","",guide.description));const tags=el("div","guide-tags");guide.topics.forEach(topic=>tags.appendChild(badge(topic)));card.appendChild(tags);const link=el("a","","Open on itch.io");link.href=guide.url;link.target="_blank";link.rel="noopener noreferrer";card.appendChild(link);grid.appendChild(card)});host.appendChild(grid);guidesRendered=true;
+      const grid=el("div","guide-grid");data.guides.forEach(guide=>{const card=el("article","guide-card");card.dataset.guideId=guide.id;card.tabIndex=-1;card.appendChild(el("div","guide-kind",guide.kind+" | "+guide.version));card.appendChild(el("h3","",guide.title));card.appendChild(el("p","",guide.description));const tags=el("div","guide-tags");guide.topics.forEach(topic=>tags.appendChild(badge(topic)));card.appendChild(tags);const link=el("a","","Open on itch.io");link.href=guide.url;link.target="_blank";link.rel="noopener noreferrer";card.appendChild(link);grid.appendChild(card)});host.appendChild(grid);guidesRendered=true;
     }
 
     function init(){
@@ -252,7 +252,40 @@
       if(id==="guides")renderGuides();
     }
 
-    return {init,activate,renderStudy,renderList,renderQuizHome,renderGuides,getSearchItems:()=>({flashcards:cards.length?cards:data.flashcards,quizzes:data.quizzes,guides:data.guides})};
+    function openItem(type,id){
+      init();
+      if(type==="flashcard"){
+        const item=cards.find(card=>card.id===id)||data.flashcards.find(card=>card.id===id);
+        if(!item)return false;
+        filters={category:"all",difficulty:"all"};
+        queue=[item];sessionTotal=1;sessionDone=0;
+        setMode("study");
+        return true;
+      }
+      if(type==="quiz"){
+        const item=data.quizzes.find(quiz=>quiz.id===id);
+        if(!item)return false;
+        quizQueue=[item];quizIndex=0;quizScore=0;quizAnswers=[];
+        renderQuizQuestion();
+        return true;
+      }
+      if(type==="guide"){
+        const item=data.guides.find(guide=>guide.id===id);
+        if(!item)return false;
+        renderGuides();
+        document.querySelectorAll(".guide-card.search-target").forEach(card=>card.classList.remove("search-target"));
+        const card=[...document.querySelectorAll("[data-guide-id]")].find(item=>item.dataset.guideId===id);
+        if(card){
+          card.classList.add("search-target");
+          card.scrollIntoView({block:"center",behavior:reduceMotion?"auto":"smooth"});
+          card.focus({preventScroll:true});
+        }
+        return true;
+      }
+      return false;
+    }
+
+    return {init,activate,openItem,renderStudy,renderList,renderQuizHome,renderGuides,getSearchItems:()=>({flashcards:cards.length?cards:data.flashcards,quizzes:data.quizzes,guides:data.guides})};
   }
 
   window.GodotTokLearningUI=Object.freeze({create});

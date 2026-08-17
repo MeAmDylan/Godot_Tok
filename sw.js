@@ -1,7 +1,7 @@
 'use strict';
 
-const CACHE_NAME='godottok-shell-v3';
-const APP_SHELL=['./','./index.html','./assets/styles.css','./js/data/learning.js','./js/learning-ui.js','./js/app.js','./manifest.webmanifest','./icon.png','./icon-192.png'];
+const CACHE_NAME='godottok-shell-v4';
+const APP_SHELL=['./','./index.html','./assets/styles.css','./js/data/learning.js','./js/data/library.js','./js/learning-ui.js','./js/library-ui.js','./js/search.js','./js/app.js','./manifest.webmanifest','./icon.png','./icon-192.png'];
 
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)));
