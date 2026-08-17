@@ -1,0 +1,32 @@
+name: Validate GodotTok
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Run dependency-free audits
+        run: |
+          node scripts/test-sync-youtube.mjs
+          node scripts/validate-content.mjs
+          node --check js/data/videos.js
+          node --check js/data/learning.js
+          node --check js/data/library.js
+          node --check js/learning-ui.js
+          node --check js/library-ui.js
+          node --check js/search.js
+          node --check js/app.js
+          node --check sw.js

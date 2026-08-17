@@ -1,0 +1,87 @@
+name: Sync YouTube videos
+
+on:
+  schedule:
+    - cron: "23 4 * * 2,5"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: youtube-video-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the default branch
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          package-manager-cache: false
+
+      - name: Check configuration
+        id: api-key
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: |
+          if [[ -n "$YOUTUBE_API_KEY" ]]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::notice title=YouTube sync not configured::Add the YOUTUBE_API_KEY repository secret to activate scheduled imports."
+          fi
+
+      - name: Fetch allowlisted uploads
+        if: steps.api-key.outputs.configured == 'true'
+        env:
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+        run: node scripts/sync-youtube.mjs
+
+      - name: Audit generated content
+        if: steps.api-key.outputs.configured == 'true'
+        run: |
+          node scripts/test-sync-youtube.mjs
+          node scripts/validate-content.mjs
+
+      - name: Detect catalogue changes
+        if: steps.api-key.outputs.configured == 'true'
+        id: changes
+        run: |
+          if [[ -n "$(git status --porcelain -- js/data/videos.js)" ]]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update the review pull request
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          branch="automation/youtube-sync"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -C "$branch"
+          git add js/data/videos.js
+          git commit -m "Update automatic YouTube catalogue"
+          git push --force-with-lease origin "HEAD:$branch"
+
+          existing_pr="$(gh pr list --head "$branch" --base main --state open --json number --jq '.[0].number // empty')"
+          if [[ -z "$existing_pr" ]]; then
+            gh pr create \
+              --base main \
+              --head "$branch" \
+              --title "Update automatic YouTube catalogue" \
+              --body "Automated allowlist update from the YouTube Data API. The sync already ran its unit and content audits. Review the titles and creators before merging."
+          else
+            echo "Updated existing pull request #$existing_pr"
+          fi

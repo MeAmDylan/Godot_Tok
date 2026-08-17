@@ -10,13 +10,34 @@ const context=vm.createContext({window:{},URL});
 
 vm.runInContext(read("js/data/learning.js"),context,{filename:"js/data/learning.js"});
 vm.runInContext(read("js/data/library.js"),context,{filename:"js/data/library.js"});
+vm.runInContext(read("js/data/videos.js"),context,{filename:"js/data/videos.js"});
 
 const learning=context.window.GodotTokLearning;
 const library=context.window.GodotTokLibrary;
+const videos=context.window.GodotTokVideos;
 assert(learning.flashcards.length===70,"Expected 70 built-in flashcards.");
 assert(learning.quizzes.length===63,"Expected 63 built-in quizzes.");
 assert(learning.guides.length===8,"Expected 8 Christophe resources.");
 assert(library.recipes.length===24,"Expected 24 Code Library recipes.");
+assert(videos.manual.length===24,"Expected 24 hand-picked videos.");
+assert(videos.all.length===videos.manual.length+videos.automatic.length,"Combined video data is incomplete.");
+
+const videoIds=new Set();
+for(const video of videos.all){
+  assert(!videoIds.has(video.id),"Duplicate video ID: "+video.id);
+  videoIds.add(video.id);
+  assert(video.type==="yt"||video.type==="tt","Unknown video type for "+video.id);
+  assert(typeof video.title==="string"&&video.title.trim(),"Missing video title for "+video.id);
+  assert(typeof video.creator==="string"&&video.creator.trim(),"Missing creator for "+video.id);
+  assert(typeof video.long==="boolean","Missing longform flag for "+video.id);
+  if(video.type==="yt")assert(/^[A-Za-z0-9_-]{11}$/.test(video.vid),"Invalid YouTube ID for "+video.id);
+  if(video.automated){
+    assert(video.type==="yt","Only YouTube videos may be imported automatically.");
+    assert(Number.isInteger(video.durationSeconds)&&video.durationSeconds>0,"Invalid automatic duration for "+video.id);
+    assert(!Number.isNaN(Date.parse(video.publishedAt)),"Invalid automatic publish date for "+video.id);
+    assert(/^@[A-Za-z0-9._-]{3,30}$/.test(video.sourceHandle),"Invalid source handle for "+video.id);
+  }
+}
 
 for(const section of library.sections){
   assert(library.recipes.filter(recipe=>recipe.section===section.id).length===8,section.id+" must have 8 recipes.");
@@ -55,8 +76,8 @@ for(const relative of [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(match
   assert(shell.includes("'./"+relative+"'"),"Service worker does not cache "+relative);
 }
 
-for(const file of ["js/data/learning.js","js/data/library.js","js/app.js"]){
+for(const file of ["js/data/videos.js","js/data/learning.js","js/data/library.js","js/app.js"]){
   assert(!read(file).includes("docs.godotengine.org/en/stable"),file+" contains an unpinned docs link.");
 }
 
-console.log("Validated 70 flashcards, 63 quizzes, 8 guides, and 24 complete Code Library recipes.");
+console.log(`Validated ${videos.all.length} videos, 70 flashcards, 63 quizzes, 8 guides, and 24 complete Code Library recipes.`);

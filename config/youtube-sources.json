@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "maxAutomaticVideos": 30,
+  "longformThresholdSeconds": 1200,
+  "sources": [
+    {
+      "handle": "@GodotEngineOfficial",
+      "label": "Godot Engine",
+      "scanLimit": 40,
+      "keep": 12,
+      "includeTerms": [],
+      "excludeTerms": []
+    },
+    {
+      "handle": "@Gdquest",
+      "label": "GDQuest",
+      "scanLimit": 40,
+      "keep": 12,
+      "includeTerms": ["godot", "gdscript"],
+      "excludeTerms": []
+    },
+    {
+      "handle": "@Brackeys",
+      "label": "Brackeys",
+      "scanLimit": 30,
+      "keep": 6,
+      "includeTerms": ["godot", "gdscript"],
+      "excludeTerms": []
+    }
+  ]
+}
