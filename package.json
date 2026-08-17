@@ -7,6 +7,7 @@
   "scripts": {
     "test": "node scripts/test-sync-youtube.mjs && node scripts/validate-content.mjs && node scripts/check-native.mjs",
     "validate": "node scripts/validate-content.mjs",
+    "audit:gdscript:export": "node scripts/export-gdscript-audit.mjs",
     "native:prepare": "node scripts/prepare-native.mjs",
     "native:check": "node scripts/check-native.mjs",
     "native:dev": "npm run native:prepare && tauri dev",

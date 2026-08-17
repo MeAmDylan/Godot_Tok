@@ -25,8 +25,13 @@ jobs:
           node --check js/data/videos.js
           node --check js/data/learning.js
           node --check js/data/library.js
+          node --check js/data/library-expansion.js
+          node --check js/data/library-expansion-2d.js
+          node --check js/data/library-expansion-3d.js
+          node --check js/data/library-bundles.js
           node --check js/learning-ui.js
           node --check js/library-ui.js
           node --check js/search.js
           node --check js/app.js
           node --check sw.js
+          node scripts/export-gdscript-audit.mjs

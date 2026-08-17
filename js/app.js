@@ -5,7 +5,25 @@ let seedVideos=[...VIDEO_DATA.all];
 
 const LEARNING=window.GodotTokLearning;
 const LEARNING_CATEGORIES=LEARNING.categories;
-const LIBRARY=window.GodotTokLibrary;
+const BASE_LIBRARY=window.GodotTokLibrary;
+const LIBRARY_EXPANSION=window.GodotTokLibraryExpansion;
+const enhancedBaseRecipes=BASE_LIBRARY.recipes.map(recipe=>{
+  const enhancement=LIBRARY_EXPANSION.baseEnhancements?.[recipe.id]||{};
+  return Object.freeze({
+    ...recipe,
+    ...enhancement,
+    version:LIBRARY_EXPANSION.version,
+    visuals:Object.freeze(enhancement.visuals||recipe.visuals||[]),
+    signals:Object.freeze(enhancement.signals||recipe.signals||[]),
+    fileMeta:Object.freeze(enhancement.fileMeta||recipe.fileMeta||{})
+  });
+});
+const LIBRARY=Object.freeze({
+  ...BASE_LIBRARY,
+  version:LIBRARY_EXPANSION.version,
+  recipes:Object.freeze([...enhancedBaseRecipes,...LIBRARY_EXPANSION.recipes]),
+  bundles:LIBRARY_EXPANSION.bundles
+});
 
 /* ── tips ─────────────────────────────────────────────────────── */
 const TIPS = [
@@ -970,7 +988,14 @@ function openLearningItem(type,id,replace=false){
 function openLibraryRecipe(id,replace=false){
   navigateToView('library',{route:false,focus:false});
   const opened=libraryUI.openRecipe(id,{route:false});
-  if(opened)setRoute('library/'+encodeURIComponent(id),replace);
+  if(opened)setRoute('library/recipe/'+encodeURIComponent(id),replace);
+  return opened;
+}
+
+function openLibraryBundle(id,replace=false){
+  navigateToView('library',{route:false,focus:false});
+  const opened=libraryUI.openBundle(id,{route:false});
+  if(opened)setRoute('library/bundle/'+encodeURIComponent(id),replace);
   return opened;
 }
 
@@ -1006,7 +1031,17 @@ function applyRoute(){
   const root=parts[0]||'feed';
   if(root==='library'){
     navigateToView('library',{route:false,focus:false});
-    if(parts[1]&&!libraryUI.openRecipe(parts[1],{route:false}))libraryUI.renderList();
+    if(parts[1]==='recipe'&&parts[2]){
+      if(!libraryUI.openRecipe(parts[2],{route:false}))libraryUI.showMode('recipes');
+    }else if(parts[1]==='bundle'&&parts[2]){
+      if(!libraryUI.openBundle(parts[2],{route:false}))libraryUI.showMode('bundles');
+    }else if(parts[1]==='bundles'){
+      libraryUI.showMode('bundles');
+    }else if(parts[1]){
+      if(!libraryUI.openRecipe(parts[1],{route:false}))libraryUI.showMode('recipes');
+    }else{
+      libraryUI.showMode('recipes');
+    }
     return;
   }
   if(root==='learn'){
@@ -1050,7 +1085,7 @@ libraryUI=window.GodotTokLibraryUI.create({
 searchUI=window.GodotTokSearch.create({
   learningData:LEARNING,libraryData:LIBRARY,
   getVideos:()=>[...userVideos,...seedVideos],
-  el,openModal,openExternal,openLearningItem,openLibraryRecipe,openReference,openDoc:openDocInApp
+  el,openModal,openExternal,openLearningItem,openLibraryRecipe,openLibraryBundle,openReference,openDoc:openDocInApp
 });
 window.addEventListener('hashchange',applyRoute);
 

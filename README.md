@@ -29,7 +29,7 @@ Runs as a static Progressive Web App with no backend or account. The same web co
 - Desktop shortcuts: Space to pause, arrow keys to navigate or seek, M to mute, and F for fullscreen
 
 **Search**
-- Ranked in-app search across videos, flashcards, quizzes, guides, reference entries, and Code Library recipes
+- Ranked in-app search across videos, flashcards, quizzes, guides, reference entries, Code Library recipes, and game bundles
 - Results open inside GodotTok, including videos in the in-app player and documentation in the built-in Docs view
 - External Godot Docs, GDQuest, and community searches run only after the user chooses an external action
 
@@ -47,12 +47,15 @@ Runs as a static Progressive Web App with no backend or account. The same web co
 - KidsCanCode Godot 4 Recipes embedded
 
 **Code Library**
-- 24 complete Godot 4.7 recipes, split evenly across 2D, 3D, and Shared systems
+- 71 complete Godot 4.7.1 recipes across 2D, 3D, and Shared systems
+- 18 recommended game bundles with mechanic maps and ordered assembly milestones
 - Category, difficulty, keyword, node, API, and code filtering
-- Exact scene trees, Input Map actions, Inspector settings, complete files, numbered setup, and test checklists
-- Copy one file or an entire recipe
-- Deep links to individual recipes
+- Exact scene trees, visual and sprite attachment, Input Map actions, Inspector settings, signal wiring, complete files, numbered setup, and test checklists
+- Minimum original art and audio lists for every game bundle
+- Clean and guided-comment script views plus individual and ZIP downloads
+- Deep links to individual recipes and bundles
 - Every recipe cites version-pinned Godot documentation, Godot Engine sources, or GDQuest
+- CI exports and parses all 113 GDScript files with the official Godot 4.7.1 editor
 
 **General**
 - Add any YouTube or TikTok video by pasting a URL
@@ -228,7 +231,7 @@ npm test
 npm run native:prepare
 ```
 
-The tests cover YouTube duration parsing, filtering, deduplication, both generated catalogue formats, learning counts, Code Library completeness, approved source domains, pinned Godot docs, local assets, unique HTML IDs, service-worker cache coverage, Tauri configuration, and the deterministic native asset bundle.
+The tests cover YouTube duration parsing, filtering, deduplication, both generated catalogue formats, learning counts, 71-recipe and 18-bundle completeness, cross-references, approved source domains, pinned Godot docs, all 113 scripts under the official Godot 4.7.1 parser, local assets, unique HTML IDs, service-worker cache coverage, Tauri configuration, and the deterministic native asset bundle.
 
 ---
 

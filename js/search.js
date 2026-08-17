@@ -23,11 +23,11 @@
   function create(deps){
     const {
       learningData,libraryData,getVideos,el,openModal,openExternal,
-      openLearningItem,openLibraryRecipe,openReference,openDoc
+      openLearningItem,openLibraryRecipe,openLibraryBundle,openReference,openDoc
     }=deps;
-    const typeOrder=["recipe","flashcard","quiz","guide","video","reference"];
+    const typeOrder=["bundle","recipe","flashcard","quiz","guide","video","reference"];
     const typeLabels={
-      recipe:"Code Library",flashcard:"Flashcards",quiz:"Quizzes",
+      bundle:"Game Bundles",recipe:"Code Library",flashcard:"Flashcards",quiz:"Quizzes",
       guide:"Guides",video:"Videos",reference:"Reference"
     };
     let lastQuery="";
@@ -62,12 +62,17 @@
           ...item.tags,...item.nodeTree,...item.files.map(file=>file.path+" "+file.code)
         ].join(" "),raw:item
       }));
+      const bundles=libraryData.bundles.map(item=>({
+        type:"bundle",id:item.id,title:item.title,description:item.summary,
+        meta:item.dimension+" | "+item.difficulty+" | "+item.recipeIds.length+" systems",
+        search:[item.title,item.summary,item.inspiredBy,item.dimension,item.difficulty,...item.mechanics,...item.artAssets,...item.sfx].join(" "),raw:item
+      }));
       const references=REFERENCES.map(item=>({
         type:"reference",id:item.id,title:item.title,description:item.description,
         meta:item.kind==="docs"?"Official Godot 4.7 docs":"In-app cheatsheet",
         search:[item.title,item.description,...item.topics].join(" "),raw:item
       }));
-      return [...recipes,...flashcards,...quizzes,...guides,...references];
+      return [...bundles,...recipes,...flashcards,...quizzes,...guides,...references];
     }
 
     function videoItems(){
@@ -132,6 +137,7 @@
 
     function activate(item){
       if(item.type==="video"){openModal(item.raw);return}
+      if(item.type==="bundle"){openLibraryBundle(item.id);return}
       if(item.type==="recipe"){openLibraryRecipe(item.id);return}
       if(item.type==="flashcard"||item.type==="quiz"||item.type==="guide"){
         openLearningItem(item.type,item.id);
@@ -163,11 +169,12 @@
 
     function renderEmpty(host){
       const hero=el("div","search-home");
-      hero.appendChild(el("div","search-home-kicker","ONE SEARCH, SIX CONTENT TYPES"));
+      hero.appendChild(el("div","search-home-kicker","ONE SEARCH, SEVEN CONTENT TYPES"));
       hero.appendChild(el("h2","","Find it without leaving GodotTok"));
       hero.appendChild(el("p","","Search videos, flashcards, quizzes, guides, the Code Library, and the in-app reference. A result opens inside the app. External sites open only when you choose an external button."));
       const types=el("div","search-type-grid");
       [
+        ["Game Bundles",libraryData.bundles.length+" complete plans"],
         ["Code Library",libraryData.recipes.length+" complete recipes"],
         ["Flashcards",learningData.flashcards.length+" sourced cards"],
         ["Quizzes",learningData.quizzes.length+" explained questions"],
