@@ -28,8 +28,9 @@ Runs as a static Progressive Web App with no backend, account, framework, or bui
 - Desktop shortcuts: Space to pause, arrow keys to navigate or seek, M to mute, and F for fullscreen
 
 **Search**
-- Live search across all seeded and user added videos
-- One tap links to search the Godot docs, GDQuest, and Godot QA for any term
+- Ranked in-app search across videos, flashcards, quizzes, guides, reference entries, and Code Library recipes
+- Results open inside GodotTok, including videos in the in-app player and documentation in the built-in Docs view
+- External Godot Docs, GDQuest, and community searches run only after the user chooses an external action
 
 **Learn**
 - GDQuest Learn GDScript From Zero app embedded
@@ -43,6 +44,14 @@ Runs as a static Progressive Web App with no backend, account, framework, or bui
 - Godot official documentation embedded with quick-nav chips
 - Full inline GDScript cheatsheet: variables, functions, control flow, arrays, signals, nodes, CharacterBody2D movement, input, Vector2, tween, node type table
 - KidsCanCode Godot 4 Recipes embedded
+
+**Code Library**
+- 24 complete Godot 4.7 recipes, split evenly across 2D, 3D, and Shared systems
+- Category, difficulty, keyword, node, API, and code filtering
+- Exact scene trees, Input Map actions, Inspector settings, complete files, numbered setup, and test checklists
+- Copy one file or an entire recipe
+- Deep links to individual recipes
+- Every recipe cites version-pinned Godot documentation, Godot Engine sources, or GDQuest
 
 **General**
 - Add any YouTube or TikTok video by pasting a URL
@@ -102,6 +111,18 @@ Built-in code-bearing items must cite Godot 4.7 documentation, the Godot reposit
 
 ---
 
+## Validate Content
+
+Run the dependency-free audit before publishing:
+
+```bash
+node scripts/validate-content.mjs
+```
+
+It checks learning counts, Code Library completeness, approved source domains, pinned Godot docs, local assets, unique HTML IDs, and service-worker cache coverage.
+
+---
+
 ## Self Hosting
 
 The app is static and requires `index.html`, `assets/`, `js/`, `manifest.webmanifest`, `sw.js`, `icon.png`, and `icon-192.png`.
@@ -152,6 +173,7 @@ python -m http.server 8080
 - Browser `localStorage` for playlists, user videos, custom flashcards, and learning progress
 - Web app manifest and service worker for installation and offline app-shell caching
 - Responsive layout: bottom nav on mobile, side rail on desktop
+- Hash-based in-app routing for searchable learning items, references, and Code Library recipes
 
 ---
 

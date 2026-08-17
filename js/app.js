@@ -49,6 +49,7 @@ const SEED_VIDEOS = [
 
 const LEARNING=window.GodotTokLearning;
 const LEARNING_CATEGORIES=LEARNING.categories;
+const LIBRARY=window.GodotTokLibrary;
 
 /* ── tips ─────────────────────────────────────────────────────── */
 const TIPS = [
@@ -622,49 +623,12 @@ function renderFeed(){
   syncNearbyEmbeds(feedEl.firstElementChild);
 }
 
-/* ── search ──────────────────────────────────────────────────── */
-function renderSearch(q){
-  const host=document.getElementById('searchResults');host.innerHTML='';
-  if(!q.trim()){
-    host.innerHTML='<div class="search-empty">search videos, gdscript topics, or a godot class name</div>';
-    const dl=el('div','doclinks');
-    [['All docs','https://docs.godotengine.org/en/4.7/'],
-     ['GDScript basics','https://docs.godotengine.org/en/4.7/tutorials/scripting/gdscript/gdscript_basics.html'],
-     ['Signals','https://docs.godotengine.org/en/4.7/getting_started/step_by_step/signals.html'],
-     ['CharacterBody2D','https://docs.godotengine.org/en/4.7/classes/class_characterbody2d.html'],
-     ['Node2D','https://docs.godotengine.org/en/4.7/classes/class_node2d.html'],
-     ['Area2D','https://docs.godotengine.org/en/4.7/classes/class_area2d.html'],
-    ].forEach(([label,url])=>{const b=el('button','doclinkbtn',label);b.type='button';b.addEventListener('click',()=>openExternal(url));dl.appendChild(b)});
-    host.appendChild(dl);return;
-  }
-  const ql=q.toLowerCase();
-  const vids=[...userVideos,...SEED_VIDEOS].filter(v=>v.title.toLowerCase().includes(ql)||(v.creator||'').toLowerCase().includes(ql));
-  if(vids.length){
-    host.appendChild(el('div','search-section','videos'));
-    vids.forEach(v=>{
-      const row=el('div','search-vid');
-      if(v.type==='yt'){const img=document.createElement('img');img.src=ytThumb(v.vid);img.alt='';row.appendChild(img)}
-      else{row.appendChild(el('div','sithumb','TT'))}
-      const m=el('div','svm');m.appendChild(el('div','svm-t',v.title));m.appendChild(el('div','svm-s',v.creator||''));row.appendChild(m);
-      row.addEventListener('click',()=>openModal(v));host.appendChild(row);
-    });
-  }
-  host.appendChild(el('div','search-section','godot docs'));
-  const dl=el('div','doclinks');
-  [['Search docs for "'+q+'"','https://docs.godotengine.org/en/4.7/search.html?q='+encodeURIComponent(q)],
-   ['GDQuest search','https://www.gdquest.com/?s='+encodeURIComponent(q)],
-   ['Ask on Godot QA','https://ask.godotengine.org/search?q='+encodeURIComponent(q)],
-  ].forEach(([label,url])=>{const b=el('button','doclinkbtn',label);b.type='button';b.addEventListener('click',()=>openExternal(url));dl.appendChild(b)});
-  host.appendChild(dl);
-}
-
-document.getElementById('searchInput').addEventListener('input',e=>renderSearch(e.target.value));
-
 /* ── learning tools ──────────────────────────────────────────── */
 const learningUI=window.GodotTokLearningUI.create({
   data:LEARNING,el,shuffle,readLocal,writeLocal,openExternal,toast,labelButton,reduceMotion
 });
 learningUI.init();
+let libraryUI=null,searchUI=null;
 
 /* ── cheatsheet ──────────────────────────────────────────────── */
 function buildCheatsheet(){
@@ -795,6 +759,9 @@ print(<span class="cs">"2 seconds done"</span>)</pre>
 <tr><td><code>GPUParticles2D</code></td><td>visual effects, particles</td></tr>
 </table>
 `;
+  host.querySelectorAll('h2').forEach(heading=>{
+    heading.id=heading.textContent.trim().toLowerCase().replace(/&/g,'and').replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  });
 }
 
 /* ── saved / playlist ────────────────────────────────────────── */
@@ -866,6 +833,7 @@ document.getElementById('addBtn').addEventListener('click',async()=>{
   document.getElementById('addUrl').value='';document.getElementById('addTitle').value='';document.getElementById('addCreator').value='';document.getElementById('addLong').checked=false;
   msg.className='ok';msg.textContent='added! rebuilding feed...';
   buildShuffledFeed();renderFeed();renderUserList();
+  if(searchUI)searchUI.renderSearch(searchUI.getLastQuery());
   setTimeout(()=>msg.textContent='',3000);
 });
 
@@ -879,7 +847,7 @@ function renderUserList(){
     m.appendChild(el('div','sis',(v.type==='yt'?'youtube':'tiktok')+(v.long?' / longform':'')));
     row.appendChild(m);
     const del=labelButton(el('button'),'Delete added video');del.appendChild(svgUse('ic-trash'));
-    del.addEventListener('click',async()=>{userVideos=userVideos.filter(x=>x.id!==v.id);await store.set('gt_uv',userVideos);buildShuffledFeed();renderFeed();renderUserList();toast('removed')});
+    del.addEventListener('click',async()=>{userVideos=userVideos.filter(x=>x.id!==v.id);await store.set('gt_uv',userVideos);buildShuffledFeed();renderFeed();renderUserList();if(searchUI)searchUI.renderSearch(searchUI.getLastQuery());toast('removed')});
     const da=el('div','siact');da.appendChild(del);row.appendChild(da);
     host.appendChild(row);
   });
@@ -906,12 +874,12 @@ function renderSettings(){
 let docsFrame=null,currentDoc='https://docs.godotengine.org/en/4.7/';
 function loadDoc(url){
   currentDoc=url;
-  if(PREVIEW){openExternal(url);return}
+  if(PREVIEW){toast('Docs are disabled in preview. Use open to continue.');return}
   if(!docsFrame){docsFrame=document.createElement('iframe');docsFrame.title='Godot documentation';document.getElementById('docsHost').appendChild(docsFrame)}
   docsFrame.src=url;
 }
 document.querySelectorAll('.chip[data-doc]').forEach(c=>{
-  c.addEventListener('click',()=>{document.querySelectorAll('.chip[data-doc]').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');currentDoc=c.dataset.doc;loadDoc(c.dataset.doc)});
+  c.addEventListener('click',()=>openDocInApp(c.dataset.doc));
 });
 document.getElementById('docsExt').addEventListener('click',()=>openExternal(currentDoc));
 
@@ -956,11 +924,18 @@ function initRecipes(){
   }
 }
 
-function activateSubtab(group, id){
+function setRoute(path,replace=false){
+  const next='#'+path;
+  if(window.location.hash===next)return;
+  const url=window.location.pathname+window.location.search+next;
+  if(replace)window.history.replaceState(null,'',url);
+  else window.history.pushState(null,'',url);
+}
+
+function activateSubtab(group,id,updateRoute=true){
   document.querySelectorAll('#'+group+'-stabs .stab').forEach(b=>{
     const selected=b.dataset.stab===id;b.classList.toggle('active',selected);b.setAttribute('aria-selected',String(selected));
   });
-  // handle subviews for learn and ref
   if(group==='learn'){
     document.getElementById('sv-gdquest').classList.toggle('active',id==='gdquest');
     document.getElementById('sv-flashcards').classList.toggle('active',id==='flashcards');
@@ -976,6 +951,7 @@ function activateSubtab(group, id){
     if(id==='docs')initDocs();
     if(id==='recipes')initRecipes();
   }
+  if(updateRoute)setRoute((group==='ref'?'reference':'learn')+'/'+id);
 }
 document.querySelectorAll('#learn-stabs .stab').forEach(b=>b.addEventListener('click',()=>activateSubtab('learn',b.dataset.stab)));
 document.querySelectorAll('#ref-stabs .stab').forEach(b=>b.addEventListener('click',()=>activateSubtab('ref',b.dataset.stab)));
@@ -990,18 +966,134 @@ function setSidebarExpanded(next){
 }
 document.getElementById('sidebarToggle').addEventListener('click',()=>setSidebarExpanded(!sidebarExpanded));
 
-document.querySelectorAll('#tabbar button[data-view]').forEach(btn=>{
-  btn.addEventListener('click',()=>{
-    document.querySelectorAll('#tabbar button[data-view]').forEach(b=>{b.classList.remove('active');b.removeAttribute('aria-current')});
-    btn.classList.add('active');btn.setAttribute('aria-current','page');
-    const v=btn.dataset.view;
-    document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
-    document.getElementById('view-'+v).classList.add('active');
-    if(v!=='feed'&&activeCard){ytCmd(activeCard,'pauseVideo');const st=cardState.get(activeCard);if(st){st.playing=false;activeCard.classList.add('paused')}}
-    if(v==='feed'&&activeCard){const st=cardState.get(activeCard);if(st&&st.kind==='yt'&&!PREVIEW){ensureCardEmbed(activeCard);ytCmd(activeCard,'setVolume',[volume]);muted?ytCmd(activeCard,'mute'):ytCmd(activeCard,'unMute');ytCmd(activeCard,'playVideo');st.playing=true;activeCard.classList.remove('paused')}}
-    if(v==='search')document.getElementById('searchInput').focus();
+function routeForView(view){return view==='ref'?'reference':view}
+
+function navigateToView(view,options={}){
+  const target=document.getElementById('view-'+view);
+  if(!target)return false;
+  document.querySelectorAll('#tabbar button[data-view],#utilitybar button[data-view]').forEach(button=>{
+    const selected=button.dataset.view===view;
+    button.classList.toggle('active',selected);
+    if(selected)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
   });
+  document.querySelectorAll('.view').forEach(section=>section.classList.remove('active'));
+  target.classList.add('active');
+  document.body.dataset.activeView=view;
+  if(view!=='feed'&&activeCard){
+    ytCmd(activeCard,'pauseVideo');
+    const state=cardState.get(activeCard);
+    if(state){state.playing=false;activeCard.classList.add('paused')}
+  }
+  if(view==='feed'&&activeCard){
+    const state=cardState.get(activeCard);
+    if(state&&state.kind==='yt'&&!PREVIEW){
+      ensureCardEmbed(activeCard);ytCmd(activeCard,'setVolume',[volume]);
+      muted?ytCmd(activeCard,'mute'):ytCmd(activeCard,'unMute');
+      ytCmd(activeCard,'playVideo');state.playing=true;activeCard.classList.remove('paused');
+    }
+  }
+  if(view==='search'&&options.focus!==false)document.getElementById('searchInput').focus();
+  if(view==='library'&&libraryUI)libraryUI.activate();
+  if(options.route!==false)setRoute(options.path||routeForView(view),Boolean(options.replace));
+  return true;
+}
+
+function openLearningItem(type,id,replace=false){
+  const tab={flashcard:'flashcards',quiz:'quizzes',guide:'guides'}[type];
+  if(!tab)return false;
+  navigateToView('learn',{route:false,focus:false});
+  activateSubtab('learn',tab,false);
+  const opened=learningUI.openItem(type,id);
+  if(opened)setRoute('learn/'+tab+'/'+encodeURIComponent(id),replace);
+  return opened;
+}
+
+function openLibraryRecipe(id,replace=false){
+  navigateToView('library',{route:false,focus:false});
+  const opened=libraryUI.openRecipe(id,{route:false});
+  if(opened)setRoute('library/'+encodeURIComponent(id),replace);
+  return opened;
+}
+
+function openReference(anchor,replace=false){
+  navigateToView('ref',{route:false,focus:false});
+  activateSubtab('ref','cheatsheet',false);
+  setRoute('reference/cheatsheet/'+encodeURIComponent(anchor),replace);
+  window.requestAnimationFrame(()=>{
+    const heading=document.getElementById(anchor);
+    if(!heading)return;
+    heading.tabIndex=-1;
+    heading.scrollIntoView({block:'start',behavior:reduceMotion?'auto':'smooth'});
+    heading.focus({preventScroll:true});
+  });
+}
+
+function openDocInApp(url,replace=false){
+  navigateToView('ref',{route:false,focus:false});
+  activateSubtab('ref','docs',false);
+  document.querySelectorAll('.chip[data-doc]').forEach(chip=>chip.classList.toggle('sel',chip.dataset.doc===url));
+  loadDoc(url);
+  setRoute('reference/docs?url='+encodeURIComponent(url),replace);
+}
+
+function applyRoute(){
+  const raw=window.location.hash.slice(1)||'feed';
+  const queryIndex=raw.indexOf('?');
+  const path=queryIndex>=0?raw.slice(0,queryIndex):raw;
+  const query=queryIndex>=0?raw.slice(queryIndex+1):'';
+  const parts=path.split('/').filter(Boolean).map(part=>{
+    try{return decodeURIComponent(part)}catch{return part}
+  });
+  const root=parts[0]||'feed';
+  if(root==='library'){
+    navigateToView('library',{route:false,focus:false});
+    if(parts[1]&&!libraryUI.openRecipe(parts[1],{route:false}))libraryUI.renderList();
+    return;
+  }
+  if(root==='learn'){
+    navigateToView('learn',{route:false,focus:false});
+    const tab=['gdquest','flashcards','quizzes','guides'].includes(parts[1])?parts[1]:'gdquest';
+    activateSubtab('learn',tab,false);
+    if(parts[2]){
+      const type={flashcards:'flashcard',quizzes:'quiz',guides:'guide'}[tab];
+      if(type)learningUI.openItem(type,parts[2]);
+    }
+    return;
+  }
+  if(root==='reference'||root==='ref'){
+    navigateToView('ref',{route:false,focus:false});
+    const tab=['docs','cheatsheet','recipes'].includes(parts[1])?parts[1]:'docs';
+    activateSubtab('ref',tab,false);
+    if(tab==='docs'){
+      const requested=new URLSearchParams(query).get('url');
+      if(requested)loadDoc(requested);
+    }
+    if(tab==='cheatsheet'&&parts[2]){
+      window.requestAnimationFrame(()=>{
+        const heading=document.getElementById(parts[2]);
+        if(heading)heading.scrollIntoView({block:'start'});
+      });
+    }
+    return;
+  }
+  const view=root==='saved'||root==='add'||root==='search'||root==='feed'?root:'feed';
+  navigateToView(view,{route:false,focus:false});
+  if(root!==view)setRoute('feed',true);
+}
+
+document.querySelectorAll('#tabbar button[data-view],#utilitybar button[data-view]').forEach(button=>{
+  button.addEventListener('click',()=>navigateToView(button.dataset.view));
 });
+
+libraryUI=window.GodotTokLibraryUI.create({
+  data:LIBRARY,el,toast,onRoute:(path,replace)=>setRoute(path,replace)
+});
+searchUI=window.GodotTokSearch.create({
+  learningData:LEARNING,libraryData:LIBRARY,
+  getVideos:()=>[...userVideos,...SEED_VIDEOS],
+  el,openModal,openExternal,openLearningItem,openLibraryRecipe,openReference,openDoc:openDocInApp
+});
+window.addEventListener('hashchange',applyRoute);
 
 document.getElementById('hintsOk').addEventListener('click',async()=>{document.getElementById('hints').classList.remove('show');await store.set('gt_hints',true)});
 document.getElementById('longToggle').addEventListener('click',async()=>{
@@ -1095,7 +1187,10 @@ async function setupPwa(){
   renderUserList();
   renderSettings();
   buildCheatsheet();
-  renderSearch('');
+  libraryUI.init();
+  searchUI.init();
+  if(!window.location.hash)setRoute('feed',true);
+  applyRoute();
   setupPwa();
   if(PREVIEW){
     const b=el('div','pbanner');
