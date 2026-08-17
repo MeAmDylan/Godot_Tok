@@ -21,6 +21,7 @@ vm.runInContext(read("js/data/videos.js"),context);
 assert(packageData.version===config.version,"package.json and Tauri versions differ.");
 assert(packageLock.packages?.["node_modules/@tauri-apps/cli"]?.version===packageData.devDependencies["@tauri-apps/cli"],"Tauri CLI lockfile version differs.");
 assert(cargo.includes(`version = "${config.version}"`),"Cargo and Tauri versions differ.");
+assert(cargo.includes('serde_json = "1"'),"Tauri generate_context requires serde_json as a direct dependency.");
 assert(config.identifier==="io.github.meamdylan.godottok","Unexpected native application identifier.");
 assert(config.build.beforeBuildCommand==="node scripts/prepare-native.mjs","Native build hook must prepare the shared web app from the repository root.");
 assert(config.build.frontendDist==="../dist","Native frontendDist must be ../dist.");
