@@ -12,6 +12,7 @@ Runs as a static Progressive Web App with no backend, account, framework, or bui
 
 **Feed**
 - Vertical snap-scroll feed for YouTube and TikTok
+- Review-gated automatic imports from allowlisted YouTube channels
 - Tap to pause / play
 - Double-tap left third to rewind 10 seconds
 - Double-tap right third to skip forward 10 seconds
@@ -79,7 +80,7 @@ The app opens in standalone mode. Video playback and external learning sites sti
 
 **In the app:** tap the **+** tab, paste a YouTube or TikTok URL.
 
-**In the HTML file:** open `index.html` in a text editor, search for `ADD VIDEOS HERE`. Copy an existing line and change its values:
+**In the source:** edit the `manual` array in `js/data/videos.js`:
 
 ```js
 {id:'yt_YOURID', type:'yt', vid:'YOURID', title:'Title', creator:'Name', long:false},
@@ -91,6 +92,30 @@ The app opens in standalone mode. Video playback and external learning sites sti
 - For TikTok add `handle:'@username'`
 
 > TikTok: use the full URL from your browser address bar. Open shortened `vm.tiktok.com` links first, then copy the resolved URL.
+
+### Automatic YouTube updates
+
+The `Sync YouTube videos` workflow runs at 04:23 UTC every Tuesday and Friday and can also be run manually. It uses the official YouTube Data API to:
+
+1. Resolve each allowlisted handle to its uploads playlist
+2. Page through recent uploads
+3. Read canonical title, creator, duration, visibility, and embed status
+4. Apply source-specific Godot keyword rules
+5. Remove duplicates against hand-picked content
+6. Update only the generated `automatic` array in `js/data/videos.js`
+7. Run the sync unit tests and the complete content audit
+8. Open or update a pull request for human review
+
+The workflow never merges video changes by itself.
+
+One-time repository setup:
+
+1. In Google Cloud, enable [YouTube Data API v3](https://developers.google.com/youtube/v3/getting-started) and create an API key restricted to that API.
+2. In GitHub, open **Settings > Secrets and variables > Actions > New repository secret** and add it as `YOUTUBE_API_KEY`.
+3. Open **Settings > Actions > General > Workflow permissions**, enable read and write permissions, and allow GitHub Actions to create pull requests.
+4. Open **Actions > Sync YouTube videos > Run workflow** for the first reviewed import.
+
+Edit `config/youtube-sources.json` to change channels, per-channel scan limits, retained counts, or keyword filters. The default allowlist is Godot Engine, GDQuest, and Godot-related Brackeys uploads. TikTok remains manual because this project does not scrape pages or store TikTok account credentials.
 
 ---
 
@@ -116,10 +141,11 @@ Built-in code-bearing items must cite Godot 4.7 documentation, the Godot reposit
 Run the dependency-free audit before publishing:
 
 ```bash
+node scripts/test-sync-youtube.mjs
 node scripts/validate-content.mjs
 ```
 
-It checks learning counts, Code Library completeness, approved source domains, pinned Godot docs, local assets, unique HTML IDs, and service-worker cache coverage.
+The tests cover YouTube duration parsing, filtering, deduplication, generated data, learning counts, Code Library completeness, approved source domains, pinned Godot docs, local assets, unique HTML IDs, and service-worker cache coverage.
 
 ---
 
@@ -167,6 +193,8 @@ python -m http.server 8080
 
 - Plain HTML + CSS + vanilla JavaScript
 - No framework, no build step, no dependencies
+- Official YouTube Data API v3 for review-gated catalogue updates
+- GitHub Actions schedule plus manual dispatch for the import workflow
 - Official YouTube IFrame Player API for playback, volume, speed, seeking, and scrubber updates
 - Nearby-only iframe lifecycle to reduce mobile memory and network use
 - Fisher-Yates shuffle on app launch for feed randomisation
