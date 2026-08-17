@@ -17,7 +17,8 @@ Runs as a static Progressive Web App with no backend, account, framework, or bui
 - Double-tap right third to skip forward 10 seconds
 - Hold anywhere for 2× speed
 - Drag the scrubber bar at the bottom of any video to seek
-- Mute / unmute toggle per video
+- Mute toggle and adjustable volume slider for YouTube videos
+- Visible fullscreen control with an in-app theatre fallback
 - Indie game dev tip cards interleaved at random
 - Feed order randomised on every app launch
 - Longform toggle to show or hide longer tutorials
@@ -47,7 +48,9 @@ Runs as a static Progressive Web App with no backend, account, framework, or bui
 - On-device playlist / saved videos
 - Nord dark theme
 - Responsive: phone, tablet, desktop, Galaxy Z Fold
+- Expandable desktop sidebar and viewport-sized video workspace
 - Installable as a PWA with a custom app icon
+- In-app install and update notifications where supported
 - Offline app shell for the cheatsheet, flashcards, and saved local data
 
 ---
@@ -100,7 +103,7 @@ Add a `code` field to show a code block on the back of the card.
 
 ## Self Hosting
 
-The app is static and requires these files: `index.html`, `manifest.webmanifest`, `sw.js`, `icon.png`, and `icon-192.png`.
+The app is static and requires `index.html`, `assets/`, `js/`, `manifest.webmanifest`, `sw.js`, `icon.png`, and `icon-192.png`.
 
 **GitHub Pages (what this repo uses):**
 
@@ -142,7 +145,7 @@ python -m http.server 8080
 
 - Plain HTML + CSS + vanilla JavaScript
 - No framework, no build step, no dependencies
-- YouTube IFrame postMessage API for playback, speed, seeking, and scrubber updates
+- Official YouTube IFrame Player API for playback, volume, speed, seeking, and scrubber updates
 - Nearby-only iframe lifecycle to reduce mobile memory and network use
 - Fisher-Yates shuffle on app launch for feed randomisation
 - Browser `localStorage` for playlists, user videos, custom flashcards, and learning progress
