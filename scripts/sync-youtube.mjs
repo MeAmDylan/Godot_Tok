@@ -7,6 +7,7 @@ const scriptPath=fileURLToPath(import.meta.url);
 const root=path.resolve(path.dirname(scriptPath),"..");
 const defaultConfigPath=path.join(root,"config/youtube-sources.json");
 const defaultVideosPath=path.join(root,"js/data/videos.js");
+const defaultContentPath=path.join(root,"content/videos.json");
 const apiRoot="https://www.googleapis.com/youtube/v3";
 
 function assert(condition,message){
@@ -86,6 +87,10 @@ export function renderVideosFile(manual,automatic){
   });
 })();
 `;
+}
+
+export function renderContentFile(automatic){
+  return safeJson({version:1,automatic})+"\n";
 }
 
 export function validateConfig(config){
@@ -175,6 +180,7 @@ export async function syncYouTube({
   apiKey,
   configPath=defaultConfigPath,
   videosPath=defaultVideosPath,
+  contentPath=defaultContentPath,
   fetchImpl=globalThis.fetch,
   write=true
 }={}){
@@ -200,15 +206,25 @@ export async function syncYouTube({
 
   const automatic=selectAutomaticVideos(collected,config,current.manual);
   const output=renderVideosFile(current.manual,automatic);
+  const contentOutput=renderContentFile(automatic);
   const previous=fs.readFileSync(videosPath,"utf8");
-  const changed=output!==previous;
-  if(write&&changed){
+  const previousContent=fs.existsSync(contentPath)?fs.readFileSync(contentPath,"utf8"):"";
+  const catalogueChanged=output!==previous;
+  const contentChanged=contentOutput!==previousContent;
+  const changed=catalogueChanged||contentChanged;
+  if(write&&catalogueChanged){
     const temporary=videosPath+".tmp";
     fs.writeFileSync(temporary,output,"utf8");
     fs.renameSync(temporary,videosPath);
   }
+  if(write&&contentChanged){
+    const temporary=contentPath+".tmp";
+    fs.mkdirSync(path.dirname(contentPath),{recursive:true});
+    fs.writeFileSync(temporary,contentOutput,"utf8");
+    fs.renameSync(temporary,contentPath);
+  }
   console.log(`YouTube sync selected ${automatic.length} automatic videos. ${changed?"Catalogue changed.":"No catalogue change."}`);
-  return {automatic,changed,output};
+  return {automatic,changed,catalogueChanged,contentChanged,output,contentOutput};
 }
 
 async function main(){

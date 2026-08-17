@@ -1,0 +1,130 @@
+name: Build native mobile test apps
+
+on:
+  pull_request:
+    paths:
+      - "assets/**"
+      - "content/**"
+      - "js/**"
+      - "scripts/**"
+      - "src-tauri/**"
+      - ".github/workflows/native-mobile.yml"
+      - "index.html"
+      - "package.json"
+      - "package-lock.json"
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: Mobile platform to compile-check
+        required: true
+        default: both
+        type: choice
+        options:
+          - both
+          - android
+          - ios
+
+permissions:
+  contents: read
+
+jobs:
+  android:
+    if: github.event_name == 'pull_request' || inputs.platform == 'both' || inputs.platform == 'android'
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Rust with Android targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+
+      - name: Cache Rust build data
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Select the installed Android NDK
+        shell: bash
+        run: |
+          if [[ -z "$ANDROID_NDK_HOME" ]]; then
+            echo "::error::The GitHub runner did not expose ANDROID_NDK_HOME."
+            exit 1
+          fi
+          echo "NDK_HOME=$ANDROID_NDK_HOME" >> "$GITHUB_ENV"
+
+      - name: Install exact frontend dependencies
+        run: npm ci
+
+      - name: Run audits and initialize Android
+        run: |
+          npm test
+          npm run native:android:init
+
+      - name: Build an Android arm64 debug APK
+        run: npm run native:android:build -- --debug --apk --target aarch64
+
+      - name: Upload Android test APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: godottok-android-debug
+          path: src-tauri/gen/android/app/build/outputs/apk/**/*.apk
+          if-no-files-found: error
+
+  ios:
+    if: github.event_name == 'pull_request' || inputs.platform == 'both' || inputs.platform == 'ios'
+    runs-on: macos-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: npm
+
+      - name: Install Rust with iOS simulator target
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios-sim
+
+      - name: Cache Rust build data
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Ensure CocoaPods is available
+        shell: bash
+        run: command -v pod >/dev/null || brew install cocoapods
+
+      - name: Install exact frontend dependencies
+        run: npm ci
+
+      - name: Run audits and initialize iOS
+        run: |
+          npm test
+          npm run native:ios:init
+
+      - name: Build an iOS Simulator debug app
+        run: npm run native:ios:build -- --debug --target aarch64-sim
+
+      - name: Upload iOS Simulator test app
+        uses: actions/upload-artifact@v4
+        with:
+          name: godottok-ios-simulator-debug
+          path: src-tauri/gen/apple/build/**/*.app
+          if-no-files-found: error
