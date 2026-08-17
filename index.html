@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#2E3440">
-<link rel="manifest" href='data:application/manifest+json,{"name":"GodotTok","short_name":"GodotTok","display":"standalone","background_color":"%232E3440","theme_color":"%232E3440","start_url":".","icons":[{"src":"icon.png","sizes":"192x192","type":"image/png"},{"src":"icon.png","sizes":"512x512","type":"image/png"}]}'>
+<meta name="description" content="A focused video feed and learning toolkit for Godot Engine developers.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon.png">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232E3440'/%3E%3Ccircle cx='16' cy='14' r='10' fill='%23478CBF'/%3E%3Ccircle cx='11' cy='11' r='4' fill='white'/%3E%3Ccircle cx='21' cy='11' r='4' fill='white'/%3E%3Ccircle cx='12.5' cy='12.5' r='1.8' fill='%23414042'/%3E%3Ccircle cx='19.5' cy='12.5' r='1.8' fill='%23414042'/%3E%3Crect x='14.2' y='15' width='3.6' height='6' rx='1.2' fill='%23414042'/%3E%3Crect x='8.5' y='20.5' width='15' height='3.5' rx='1.8' fill='%23414042'/%3E%3C/svg%3E">
 <title>GodotTok</title>
@@ -25,6 +28,10 @@ button{font-family:inherit;border:0;background:none;color:inherit;cursor:pointer
 input,textarea,select{font-family:inherit}
 a{color:var(--f1)}
 svg{display:block}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{
+  outline:3px solid var(--yel);outline-offset:3px;
+}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 /* ── layout ── */
 #app{display:flex;flex-direction:column;height:100%}
@@ -52,9 +59,15 @@ main{flex:1;min-height:0;position:relative;overflow:hidden}
 #feed{height:100%;width:100%;max-width:520px;background:#000;overflow-y:scroll;scroll-snap-type:y mandatory;overscroll-behavior:contain;scrollbar-width:none}
 #feed::-webkit-scrollbar{display:none}
 .card{height:100%;width:100%;scroll-snap-align:start;scroll-snap-stop:always;position:relative;overflow:hidden;background:#000;flex-shrink:0}
-.card iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-.card .scrim{position:absolute;left:0;right:0;bottom:0;height:42%;background:linear-gradient(transparent,rgba(30,36,50,.96));pointer-events:none}
-.card .meta{position:absolute;left:12px;bottom:46px;right:80px;pointer-events:none}
+.card iframe{position:absolute;inset:0;width:100%;height:100%;border:0;z-index:1}
+.video-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:var(--n0);overflow:hidden;z-index:0}
+.video-placeholder img{width:100%;height:100%;object-fit:cover;opacity:.72;filter:saturate(.8)}
+.video-placeholder::after{content:"";position:absolute;inset:0;background:linear-gradient(rgba(0,0,0,.08),rgba(0,0,0,.55))}
+.video-placeholder .vp-mark{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;width:68px;height:68px;border-radius:50%;background:rgba(36,41,51,.82);color:var(--n6);font-family:var(--mono);font-weight:700;box-shadow:0 6px 24px rgba(0,0,0,.35)}
+.video-placeholder .vp-mark svg{width:30px;height:30px;fill:currentColor}
+.card.embed-ready .video-placeholder{opacity:0;pointer-events:none;transition:opacity .2s}
+.card .scrim{position:absolute;left:0;right:0;bottom:0;height:42%;background:linear-gradient(transparent,rgba(30,36,50,.96));pointer-events:none;z-index:2}
+.card .meta{position:absolute;left:12px;bottom:46px;right:80px;pointer-events:none;z-index:3}
 .meta .mcr{font-family:var(--mono);font-size:11px;color:var(--f1);margin-bottom:3px;display:flex;align-items:center;gap:5px}
 .meta .mtitle{font-weight:600;font-size:14px;line-height:1.35;color:var(--n6);margin-bottom:5px}
 .meta .mtip{font-size:11.5px;color:var(--yel);line-height:1.45;border-left:2px solid rgba(235,203,139,.4);padding-left:7px}
@@ -67,7 +80,7 @@ main{flex:1;min-height:0;position:relative;overflow:hidden}
 .taplayer{position:absolute;top:0;left:0;right:72px;bottom:28px;touch-action:pan-y;user-select:none;-webkit-user-select:none;z-index:10}
 
 /* pause/play indicator */
-.center-state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .15s}
+.center-state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:0;transition:opacity .15s;z-index:11}
 .card.paused .center-state{opacity:1}
 .center-state svg{width:60px;height:60px;fill:rgba(236,239,244,.8);filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
 .boost-badge{position:absolute;top:42%;left:50%;transform:translate(-50%,-50%);font-family:var(--mono);font-weight:700;font-size:16px;color:var(--n0);background:var(--yel);padding:4px 14px;border-radius:20px;opacity:0;transition:opacity .1s;pointer-events:none;z-index:12}
@@ -234,7 +247,7 @@ details[open] summary::before{content:"- ";color:var(--red)}
 details .dbody{padding:0 14px 14px;font-size:13px;line-height:1.7;color:var(--n4)}
 details .dbody code{font-family:var(--mono);font-size:12px;color:var(--f0);background:var(--n1);padding:1px 5px;border-radius:4px}
 details .dbody p{margin-bottom:8px}
-.toggle-row{display:flex;align-items:center;gap:12px;padding:11px 0;cursor:pointer;border-bottom:1px solid var(--n2)}
+.toggle-row{display:flex;width:100%;align-items:center;gap:12px;padding:11px 0;cursor:pointer;border-bottom:1px solid var(--n2);text-align:left}
 .toggle-row .trlabel{flex:1}
 .toggle-row .trlabel div:first-child{font-size:13px;color:var(--n4)}
 .toggle-row .trlabel div:last-child{font-family:var(--mono);font-size:11px;color:var(--n3);margin-top:2px}
@@ -279,6 +292,9 @@ details .dbody p{margin-bottom:8px}
   .feed-wrap{background:var(--bg)}
   #feed{border-left:1px solid var(--n2);border-right:1px solid var(--n2)}
 }
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
 </style>
 </head><body>
 <svg style="display:none" aria-hidden="true"><defs>
@@ -310,15 +326,17 @@ details .dbody p{margin-bottom:8px}
             <span>Godot</span>Tok
           </div>
           <div class="spacer"></div>
-          <button class="pill" id="longToggle">longform: off</button>
+          <button class="pill" id="longToggle" type="button" aria-pressed="false">longform: off</button>
         </div>
-        <div id="hints">
+        <div id="hints" role="dialog" aria-modal="true" aria-labelledby="hintsTitle">
+          <div id="hintsTitle" class="sr-only">Feed controls</div>
           <div><b>tap</b> to pause / play</div>
           <div><b>double-tap left</b> rewind 10s</div>
           <div><b>double-tap right</b> forward 10s</div>
           <div><b>hold</b> anywhere for 2x speed</div>
           <div><b>drag scrubber</b> at bottom to seek</div>
           <div><b>swipe up/down</b> for next video</div>
+          <div><b>desktop:</b> Space play, arrows navigate/seek, M mute, F fullscreen</div>
           <button id="hintsOk">got it</button>
         </div>
       </div>
@@ -327,6 +345,7 @@ details .dbody p{margin-bottom:8px}
     <!-- SEARCH -->
     <section class="view" id="view-search">
       <div class="search-top">
+        <label class="sr-only" for="searchInput">Search GodotTok</label>
         <input type="text" id="searchInput" placeholder="Search videos, topics, GDScript...">
       </div>
       <div class="search-results" id="searchResults"></div>
@@ -334,24 +353,24 @@ details .dbody p{margin-bottom:8px}
 
     <!-- LEARN: GDQuest + Flashcards -->
     <section class="view" id="view-learn">
-      <div class="stabs" id="learn-stabs">
-        <button class="stab active" data-stab="gdquest">GDQuest app</button>
-        <button class="stab" data-stab="flashcards">Flashcards</button>
+      <div class="stabs" id="learn-stabs" role="tablist" aria-label="Learning tools">
+        <button class="stab active" type="button" role="tab" aria-selected="true" data-stab="gdquest">GDQuest app</button>
+        <button class="stab" type="button" role="tab" aria-selected="false" data-stab="flashcards">Flashcards</button>
       </div>
       <div class="subview active" id="sv-gdquest">
         <div class="pagebar">
           <span class="ptitle">learn_gdscript/</span>
           <span class="chip" style="border:0;background:none;color:var(--n3)">GDQuest, free &amp; open source</span>
-          <button class="extbtn" onclick="window.open('https://gdquest.github.io/learn-gdscript/','_blank')">&#8599; open</button>
+          <button class="extbtn" type="button" onclick="openExternal('https://gdquest.github.io/learn-gdscript/')">&#8599; open</button>
         </div>
         <div class="framehost" id="learnHost"></div>
         <div class="framenote">May take a moment to load. Designed for desktop; best used unfolded or in landscape on the Fold.</div>
       </div>
       <div class="subview" id="sv-flashcards">
-        <div class="fc-mode-bar">
-          <button class="active" id="fcModeStudy">Study</button>
-          <button id="fcModeList">All cards</button>
-          <button id="fcModeAdd">+ Add card</button>
+        <div class="fc-mode-bar" role="tablist" aria-label="Flashcard views">
+          <button class="active" type="button" role="tab" aria-selected="true" id="fcModeStudy">Study</button>
+          <button type="button" role="tab" aria-selected="false" id="fcModeList">All cards</button>
+          <button type="button" role="tab" aria-selected="false" id="fcModeAdd">+ Add card</button>
         </div>
         <div id="fcStudyView" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden"></div>
         <div id="fcListView" style="display:none;flex-direction:column;flex:1;min-height:0;overflow:hidden"></div>
@@ -370,7 +389,7 @@ details .dbody p{margin-bottom:8px}
             <details>
               <summary>add cards in the HTML file</summary>
               <div class="dbody">
-                <p>Open <code>Index.html</code> in a text editor. Search for <code>MY_CARDS</code>. You will find a clearly marked array near the top of the script section. Add entries like:</p>
+                <p>Open <code>index.html</code> in a text editor. Search for <code>MY_CARDS</code>. You will find a clearly marked array near the top of the script section. Add entries like:</p>
                 <p><code>{q:'Your question here', a:'Your answer here'},</code></p>
                 <p>Optionally add <code>code:'your_snippet()'</code> to show a code block on the back. Save the file and upload it to GitHub.</p>
               </div>
@@ -382,10 +401,10 @@ details .dbody p{margin-bottom:8px}
 
     <!-- REF: Docs + Cheatsheet + Recipes -->
     <section class="view" id="view-ref">
-      <div class="stabs" id="ref-stabs">
-        <button class="stab active" data-stab="docs">Docs</button>
-        <button class="stab" data-stab="cheatsheet">Cheatsheet</button>
-        <button class="stab" data-stab="recipes">Recipes</button>
+      <div class="stabs" id="ref-stabs" role="tablist" aria-label="Reference tools">
+        <button class="stab active" type="button" role="tab" aria-selected="true" data-stab="docs">Docs</button>
+        <button class="stab" type="button" role="tab" aria-selected="false" data-stab="cheatsheet">Cheatsheet</button>
+        <button class="stab" type="button" role="tab" aria-selected="false" data-stab="recipes">Recipes</button>
       </div>
       <div class="subview active" id="sv-docs">
         <div class="pagebar">
@@ -409,7 +428,7 @@ details .dbody p{margin-bottom:8px}
         <div class="pagebar">
           <span class="ptitle">recipes/</span>
           <span class="chip" style="border:0;background:none;color:var(--n3)">KidsCanCode Godot 4 Recipes</span>
-          <button class="extbtn" onclick="window.open('https://kidscancode.org/godot_recipes/4.x/','_blank')">&#8599; open</button>
+          <button class="extbtn" type="button" onclick="openExternal('https://kidscancode.org/godot_recipes/4.x/')">&#8599; open</button>
         </div>
         <div class="framehost" id="recipesHost"></div>
         <div class="framenote">Full Godot 4 recipe book. If it does not load, use &#8599; open.</div>
@@ -454,7 +473,7 @@ details .dbody p{margin-bottom:8px}
         <details>
           <summary>add videos directly in the HTML file</summary>
           <div class="dbody">
-            <p>Open <code>Index.html</code> in a text editor. Search for <code>ADD VIDEOS HERE</code>. You will find a clearly labelled array. Copy any existing line and change four values:</p>
+            <p>Open <code>index.html</code> in a text editor. Search for <code>ADD VIDEOS HERE</code>. You will find a clearly labelled array. Copy any existing line and change four values:</p>
             <p><code>{id:'yt_YOURID', type:'yt', vid:'YOURID', title:'Title', creator:'Name', long:false}</code></p>
             <p>Set <code>type:'tt'</code> for TikTok and add <code>handle:'@username'</code>. Set <code>long:true</code> for long tutorials. Save and upload to GitHub.</p>
           </div>
@@ -470,7 +489,7 @@ details .dbody p{margin-bottom:8px}
         <details>
           <summary>install as app (PWA)</summary>
           <div class="dbody">
-            <p>1. Upload both <code>Index.html</code> and <code>icon.png</code> to your GitHub repo.</p>
+            <p>1. Upload <code>index.html</code>, <code>manifest.webmanifest</code>, <code>sw.js</code>, and both icon files to your GitHub repo.</p>
             <p>2. Open your GitHub Pages URL in <b>Chrome</b> on Android.</p>
             <p>3. Chrome menu &rarr; <b>Add to Home screen</b>. The icon.png file becomes your app icon.</p>
             <p>Godot logo: Andrea Calabr&ograve; / Godot Foundation, CC BY 4.0.</p>
@@ -480,26 +499,26 @@ details .dbody p{margin-bottom:8px}
     </section>
   </main>
 
-  <nav id="tabbar">
-    <button data-view="feed" class="active"><svg><use href="#ic-play"/></svg>feed</button>
-    <button data-view="search"><svg><use href="#ic-search"/></svg>search</button>
-    <button data-view="learn"><svg><use href="#ic-learn"/></svg>learn</button>
-    <button data-view="ref"><svg><use href="#ic-book"/></svg>ref</button>
-    <button data-view="saved"><svg><use href="#ic-saved"/></svg>saved</button>
-    <button data-view="add"><svg><use href="#ic-add"/></svg>add</button>
+  <nav id="tabbar" aria-label="Primary navigation">
+    <button type="button" data-view="feed" class="active" aria-current="page"><svg aria-hidden="true"><use href="#ic-play"/></svg>feed</button>
+    <button type="button" data-view="search"><svg aria-hidden="true"><use href="#ic-search"/></svg>search</button>
+    <button type="button" data-view="learn"><svg aria-hidden="true"><use href="#ic-learn"/></svg>learn</button>
+    <button type="button" data-view="ref"><svg aria-hidden="true"><use href="#ic-book"/></svg>ref</button>
+    <button type="button" data-view="saved"><svg aria-hidden="true"><use href="#ic-saved"/></svg>saved</button>
+    <button type="button" data-view="add"><svg aria-hidden="true"><use href="#ic-add"/></svg>add</button>
   </nav>
 </div>
 
-<div id="modal">
+<div id="modal" role="dialog" aria-modal="true" aria-labelledby="mtitle" aria-hidden="true">
   <div class="mbar">
     <div class="mtitle" id="mtitle"></div>
-    <button class="mclose" id="mclose">close</button>
+    <button class="mclose" id="mclose" type="button">close</button>
   </div>
   <div class="mhost" id="mhost"></div>
 </div>
-<div id="toast"></div><script>
+<div id="toast" role="status" aria-live="polite"></div><script>
 'use strict';
-const PREVIEW = !!window.storage;
+const PREVIEW = new URLSearchParams(window.location.search).get('preview')==='1';
 
 /* ================================================================
    🎮  ADD VIDEOS HERE
@@ -569,7 +588,7 @@ const TIPS = [
   {f:'pixels.gd',t:'Pick one pixel density and commit',p:'Choose a tile size (16 or 32) and keep every sprite at that scale. Set the default texture filter to Nearest and use the viewport stretch mode for crisp scaling on any screen.'},
   {f:'slice.gd',t:'Build a vertical slice first',p:'One polished minute of real gameplay, real art, real sound tells you whether the loop is fun. Find that out before you build ten levels for a loop that does not work.'},
   {f:'scenes.gd',t:'If you use it twice, make it a scene',p:'Bullets, pickups, enemies, UI panels — anything reused becomes its own scene, instanced where needed. Scenes are prefabs. Composition beats one giant scene tree.'},
-  {f:'delta.gd',t:'Always multiply movement by delta',p:'<code>velocity * delta</code> in <code>_process</code>, or put physics in <code>_physics_process</code>. Skip this and your game plays at different speeds on different machines.'},
+  {f:'delta.gd',t:'Use delta for manual position changes',p:'For manual motion use <code>position += velocity * delta</code>. For <code>CharacterBody2D</code>, set <code>velocity</code> in <code>_physics_process</code> and call <code>move_and_slide()</code>; it applies the physics timestep for you.'},
   {f:'audio.gd',t:'Audio is half the experience',p:'Even rough placeholder sounds beat silence — players forgive simple art far faster than a mute game. Balance with audio buses early so you do not have to redo it at the end.'},
   {f:'marketing.gd',t:'Marketing starts at the prototype',p:'Post short clips of your juiciest moments while you build. An audience grows slowly. The day your store page goes live should not be the first day strangers hear about your game.'},
 ];
@@ -605,22 +624,33 @@ const BUILT_IN_CARDS = [
 
 /* ── storage adapter ─────────────────────────────────────────── */
 const mem = {};
+function safeJsonParse(raw,fallback){
+  if(raw==null)return fallback;
+  try{const value=JSON.parse(raw);return value==null?fallback:value}catch{return fallback}
+}
+function readLocal(key,fallback){
+  try{return safeJsonParse(window.localStorage.getItem(key),fallback)}catch{return fallback}
+}
+function writeLocal(key,value){
+  try{window.localStorage.setItem(key,JSON.stringify(value));return true}catch{return false}
+}
 const store = {
   async get(k){
-    if(window.storage){try{const r=await window.storage.get(k);return r?JSON.parse(r.value):null}catch{return null}}
-    try{const v=window.localStorage.getItem(k);return v?JSON.parse(v):null}catch{return mem[k]??null}
+    try{const v=window.localStorage.getItem(k);return safeJsonParse(v,mem[k]??null)}catch{return mem[k]??null}
   },
   async set(k,v){
-    if(window.storage){try{await window.storage.set(k,JSON.stringify(v))}catch{}; return}
-    try{window.localStorage.setItem(k,JSON.stringify(v))}catch{mem[k]=v}
+    if(!writeLocal(k,v)){mem[k]=v;return false}
+    return true;
   }
 };
 
 /* ── state ───────────────────────────────────────────────────── */
-let userVideos=[], savedIds=[], savedItems={}, longformOn=false, muted=true;
+let userVideos=[], savedIds=[], savedItems={}, longformOn=false, showTikTok=true, muted=true;
 let activeCard=null, activeIframe=null;
 const cardState=new Map(); // {kind,playing,currentTime,duration}
 let shuffledFeed=[]; // set once per session, randomised
+let modalReturnFocus=null;
+const reduceMotion=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ── utils ───────────────────────────────────────────────────── */
 function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.random()*(i+1);[b[i],b[j]]=[b[j],b[i]]};return b}
@@ -628,32 +658,52 @@ function shuffle(a){const b=[...a];for(let i=b.length-1;i>0;i--){const j=0|Math.
 function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!=null)e.textContent=txt;return e}
 function svgUse(id){const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.innerHTML='<use href="#'+id+'"/>';return s}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200)}
+function labelButton(button,label){button.type='button';button.setAttribute('aria-label',label);button.title=label;return button}
+function openExternal(url){const win=window.open(url,'_blank','noopener,noreferrer');if(win)win.opener=null}
+function updateMuteButtons(){
+  document.querySelectorAll('.mutebtn').forEach(button=>{
+    button.innerHTML='';button.appendChild(svgUse(muted?'ic-vol-off':'ic-vol-on'));
+    button.setAttribute('aria-label',muted?'Turn sound on':'Mute videos');
+    button.title=muted?'Turn sound on':'Mute videos';
+    button.setAttribute('aria-pressed',String(!muted));
+  });
+}
+function setMuted(next,announce=true){
+  muted=next;updateMuteButtons();
+  if(activeCard)muted?ytCmd(activeCard,'mute'):ytCmd(activeCard,'unMute');
+  if(announce)toast(muted?'muted':'sound on');
+}
 
-function itemUrl(v){return v.type==='yt'?'https://www.youtube.com/watch?v='+v.vid:'https://www.tiktok.com/'+(v.handle||'')+(v.handle?'/':'@video/')+'video/'+v.vid}
+function itemUrl(v){
+  if(v.url)return v.url;
+  if(v.type==='yt')return 'https://www.youtube.com/watch?v='+v.vid;
+  return v.handle?'https://www.tiktok.com/'+v.handle+'/video/'+v.vid:'https://www.tiktok.com/player/v1/'+v.vid;
+}
 function ytThumb(id){return 'https://i.ytimg.com/vi/'+id+'/mqdefault.jpg'}
+function validYouTubeId(id){return typeof id==='string'&&/^[A-Za-z0-9_-]{11}$/.test(id)}
 
 function parseVideoUrl(raw){
   let u;try{u=new URL(raw.trim())}catch{return null}
   const h=u.hostname.replace(/^www\./,'');
-  if(h==='youtu.be'){const id=u.pathname.split('/')[1];if(id)return{type:'yt',vid:id}}
+  if(h==='youtu.be'){const id=u.pathname.split('/')[1];if(validYouTubeId(id))return{type:'yt',vid:id,url:u.href}}
   if(h.endsWith('youtube.com')){
-    const v=u.searchParams.get('v');if(v)return{type:'yt',vid:v};
-    const m=u.pathname.match(/\/(shorts|embed|live)\/([A-Za-z0-9_-]{6,})/);if(m)return{type:'yt',vid:m[2]};
+    const v=u.searchParams.get('v');if(validYouTubeId(v))return{type:'yt',vid:v,url:u.href};
+    const m=u.pathname.match(/\/(shorts|embed|live)\/([A-Za-z0-9_-]{11})(?:\/|$)/);if(m)return{type:'yt',vid:m[2],url:u.href};
   }
   if(h.endsWith('tiktok.com')){
     if(h.startsWith('vm.')||h.startsWith('vt.'))return{type:'tt_short'};
-    const m=u.pathname.match(/\/@([^\/]+)\/video\/(\d+)/);if(m)return{type:'tt',vid:m[2],handle:'@'+m[1]};
-    const m2=u.pathname.match(/\/video\/(\d+)/);if(m2)return{type:'tt',vid:m2[1]};
+    const m=u.pathname.match(/\/@([^\/]+)\/video\/(\d+)/);if(m)return{type:'tt',vid:m[2],handle:'@'+m[1],url:u.href};
+    const m2=u.pathname.match(/\/video\/(\d+)/);if(m2)return{type:'tt',vid:m2[1],url:u.href};
   }
   return null;
 }
 
 /* ── YouTube postMessage ─────────────────────────────────────── */
 function ytCmd(card,fn,args){
-  try{const f=card.querySelector('iframe');if(f&&f.contentWindow)f.contentWindow.postMessage(JSON.stringify({event:'command',func:fn,args:args??''}),'*')}catch{}
+  try{const f=card.querySelector('iframe');if(f&&f.contentWindow)f.contentWindow.postMessage(JSON.stringify({event:'command',func:fn,args:args??''}),'https://www.youtube-nocookie.com')}catch{}
 }
 function seekRelative(card,secs){
-  const st=cardState.get(card);if(!st)return;
+  const st=cardState.get(card);if(!st||st.kind!=='yt')return;
   const t=Math.max(0,(st.currentTime||0)+secs);
   ytCmd(card,'seekTo',[t,true]);
   st.currentTime=t;
@@ -663,6 +713,7 @@ function seekRelative(card,secs){
 window.addEventListener('message',e=>{
   if(!activeCard||!activeIframe)return;
   try{
+    if(e.origin!=='https://www.youtube-nocookie.com'&&e.origin!=='https://www.youtube.com')return;
     const d=(typeof e.data==='string')?JSON.parse(e.data):e.data;
     if(e.source!==activeIframe.contentWindow)return;
     if(d.event==='infoDelivery'&&d.info){
@@ -679,8 +730,10 @@ function updateScrubber(card,st){
   const pct=((st.currentTime/st.duration)*100).toFixed(2)+'%';
   const fill=card.querySelector('.scrub-fill');
   const dot=card.querySelector('.scrub-dot');
+  const hit=card.querySelector('.scrub-hit');
   if(fill)fill.style.width=pct;
   if(dot)dot.style.left=pct;
+  if(hit){hit.setAttribute('aria-valuemax',String(Math.round(st.duration)));hit.setAttribute('aria-valuenow',String(Math.round(st.currentTime)))}
 }
 
 /* ── gestures ────────────────────────────────────────────────── */
@@ -737,7 +790,7 @@ function attachGestures(card,layer){
 }
 
 function togglePlay(card){
-  const st=cardState.get(card);if(!st)return;
+  const st=cardState.get(card);if(!st||st.kind!=='yt')return;
   if(st.playing){ytCmd(card,'pauseVideo');st.playing=false;card.classList.add('paused')}
   else{ytCmd(card,'playVideo');if(muted)ytCmd(card,'mute');else ytCmd(card,'unMute');st.playing=true;card.classList.remove('paused')}
 }
@@ -764,9 +817,19 @@ function attachScrubber(card,hitEl){
     st.currentTime=t;updateScrubber(card,st);
   }
   let dragging=false;
+  hitEl.tabIndex=0;
+  hitEl.setAttribute('role','slider');
+  hitEl.setAttribute('aria-label','Video position');
+  hitEl.setAttribute('aria-valuemin','0');
+  hitEl.setAttribute('aria-valuemax','0');
+  hitEl.setAttribute('aria-valuenow','0');
   hitEl.addEventListener('pointerdown',e=>{e.stopPropagation();dragging=true;hitEl.setPointerCapture(e.pointerId);seek(e)});
   hitEl.addEventListener('pointermove',e=>{if(dragging){e.stopPropagation();seek(e)}});
   hitEl.addEventListener('pointerup',e=>{dragging=false});
+  hitEl.addEventListener('keydown',e=>{
+    if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;
+    e.preventDefault();seekRelative(card,e.key==='ArrowLeft'?-5:5);
+  });
 }
 
 /* ── build video card ────────────────────────────────────────── */
@@ -774,28 +837,29 @@ function buildVideoCard(v){
   const card=el('div','card');
   card.dataset.vid=v.id;
   card.dataset.type=v.type;
+  card._video=v;
+  card.setAttribute('aria-label',(v.type==='yt'?'YouTube: ':'TikTok: ')+v.title);
 
   if(PREVIEW){
     const fb=el('div','fallback');
     const img=document.createElement('img');
     img.src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/godot/godot-original.svg';
     img.alt='';fb.appendChild(img);
-    fb.appendChild(el('div','ft','embed blocked in claude preview'));
-    fb.appendChild(el('div','fs','download godottok.html and open it (or host it on github pages) for the full app'));
-    const go=el('button','fb',v.type==='yt'?'watch on youtube':'open on tiktok');
-    go.addEventListener('click',()=>window.open(itemUrl(v),'_blank'));
+    fb.appendChild(el('div','ft','embeds disabled in preview mode'));
+    fb.appendChild(el('div','fs','Open the hosted app without ?preview=1 to load external video embeds.'));
+    const go=labelButton(el('button','fb',v.type==='yt'?'watch on youtube':'open on tiktok'),'Open video in a new tab');
+    go.addEventListener('click',()=>openExternal(itemUrl(v)));
     fb.appendChild(go);card.appendChild(fb);
   } else {
-    const f=document.createElement('iframe');
-    f.setAttribute('allow','autoplay; encrypted-media; picture-in-picture; fullscreen');
-    f.setAttribute('allowfullscreen','');
-    f.loading='lazy';
+    const placeholder=el('div','video-placeholder');
     if(v.type==='yt'){
-      f.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(v.vid)+'?enablejsapi=1&playsinline=1&controls=0&rel=0&modestbranding=1&mute=1&iv_load_policy=3';
+      const img=document.createElement('img');img.src=ytThumb(v.vid);img.alt='';placeholder.appendChild(img);
+      const mark=el('span','vp-mark');mark.appendChild(svgUse('ic-play'));placeholder.appendChild(mark);
     } else {
-      f.src='https://www.tiktok.com/embed/v2/'+encodeURIComponent(v.vid);
+      placeholder.appendChild(el('span','vp-mark','TT'));
     }
-    card.appendChild(f);
+    placeholder.setAttribute('aria-hidden','true');
+    card.appendChild(placeholder);
   }
 
   card.appendChild(el('div','scrim'));
@@ -811,36 +875,35 @@ function buildVideoCard(v){
   card.appendChild(meta);
 
   /* rail */
-  const rail=el('div','rail');
+  const rail=el('div','rail');rail.setAttribute('aria-label','Video actions');
 
   if(v.type==='yt'&&!PREVIEW){
-    const bM=el('button','mutebtn');bM.appendChild(svgUse(muted?'ic-vol-off':'ic-vol-on'));
+    const bM=labelButton(el('button','mutebtn'),muted?'Turn sound on':'Mute videos');bM.appendChild(svgUse(muted?'ic-vol-off':'ic-vol-on'));bM.setAttribute('aria-pressed',String(!muted));
     bM.addEventListener('click',e=>{
-      e.stopPropagation();muted=!muted;
-      document.querySelectorAll('.mutebtn').forEach(b=>{b.innerHTML='';b.appendChild(svgUse(muted?'ic-vol-off':'ic-vol-on'))});
-      if(activeCard)muted?ytCmd(activeCard,'mute'):ytCmd(activeCard,'unMute');
-      toast(muted?'muted':'sound on');
+      e.stopPropagation();setMuted(!muted);
     });
     rail.appendChild(bM);
   }
 
-  const bSv=el('button');bSv.appendChild(svgUse('ic-bm'));
-  if(savedIds.includes(v.id))bSv.classList.add('on');
+  const isSaved=savedIds.includes(v.id);
+  const bSv=labelButton(el('button'),isSaved?'Remove from saved videos':'Save video');bSv.appendChild(svgUse('ic-bm'));
+  bSv.setAttribute('aria-pressed',String(isSaved));
+  if(isSaved)bSv.classList.add('on');
   bSv.addEventListener('click',async e=>{
     e.stopPropagation();
     const i=savedIds.indexOf(v.id);
-    if(i>=0){savedIds.splice(i,1);delete savedItems[v.id];bSv.classList.remove('on');toast('removed from saved')}
-    else{savedIds.push(v.id);savedItems[v.id]=v;bSv.classList.add('on');toast('saved to playlist')}
+    if(i>=0){savedIds.splice(i,1);delete savedItems[v.id];bSv.classList.remove('on');bSv.setAttribute('aria-pressed','false');bSv.setAttribute('aria-label','Save video');bSv.title='Save video';toast('removed from saved')}
+    else{savedIds.push(v.id);savedItems[v.id]=v;bSv.classList.add('on');bSv.setAttribute('aria-pressed','true');bSv.setAttribute('aria-label','Remove from saved videos');bSv.title='Remove from saved videos';toast('saved to playlist')}
     await store.set('gt_saved',{ids:savedIds,items:savedItems});renderSaved();
   });
   rail.appendChild(bSv);
 
-  const bSh=el('button');bSh.appendChild(svgUse('ic-share'));
+  const bSh=labelButton(el('button'),'Share video');bSh.appendChild(svgUse('ic-share'));
   bSh.addEventListener('click',e=>{e.stopPropagation();shareUrl(itemUrl(v),v.title)});
   rail.appendChild(bSh);
 
-  const bEx=el('button');bEx.appendChild(svgUse('ic-ext'));
-  bEx.addEventListener('click',e=>{e.stopPropagation();window.open(itemUrl(v),'_blank')});
+  const bEx=labelButton(el('button'),'Open video in a new tab');bEx.appendChild(svgUse('ic-ext'));
+  bEx.addEventListener('click',e=>{e.stopPropagation();openExternal(itemUrl(v))});
   rail.appendChild(bEx);
 
   card.appendChild(rail);
@@ -874,6 +937,63 @@ function buildVideoCard(v){
   return card;
 }
 
+function ensureCardEmbed(card){
+  if(PREVIEW||!card||!card._video)return null;
+  const existing=card.querySelector('iframe');
+  if(existing)return existing;
+  const v=card._video;
+  const frame=document.createElement('iframe');
+  frame.setAttribute('allow','autoplay; encrypted-media; picture-in-picture; fullscreen');
+  frame.setAttribute('allowfullscreen','');
+  frame.referrerPolicy='strict-origin-when-cross-origin';
+  frame.loading='eager';
+  frame.title=(v.type==='yt'?'YouTube video: ':'TikTok video: ')+v.title;
+  if(v.type==='yt'){
+    const origin=window.location.origin&&window.location.origin!=='null'?'&origin='+encodeURIComponent(window.location.origin):'';
+    frame.src='https://www.youtube-nocookie.com/embed/'+encodeURIComponent(v.vid)+'?enablejsapi=1&playsinline=1&controls=0&rel=0&mute=1&iv_load_policy=3'+origin;
+  }else{
+    frame.src='https://www.tiktok.com/embed/v2/'+encodeURIComponent(v.vid);
+  }
+  frame.addEventListener('load',()=>{
+    card.classList.add('embed-ready');
+    if(card!==activeCard||v.type!=='yt')return;
+    activeIframe=frame;
+    window.setTimeout(()=>{
+      const state=cardState.get(card);
+      if(state&&state.currentTime>1)ytCmd(card,'seekTo',[state.currentTime,true]);
+      muted?ytCmd(card,'mute'):ytCmd(card,'unMute');
+      ytCmd(card,'playVideo');
+      if(state)state.playing=true;
+      card.classList.remove('paused');
+    },250);
+  },{once:true});
+  const scrim=card.querySelector('.scrim');
+  card.insertBefore(frame,scrim||card.firstChild);
+  return frame;
+}
+
+function unloadCardEmbed(card){
+  if(!card||card===activeCard)return;
+  const frame=card.querySelector('iframe');
+  if(!frame)return;
+  if(card.dataset.type==='yt')ytCmd(card,'pauseVideo');
+  frame.remove();card.classList.remove('embed-ready');
+  const state=cardState.get(card);if(state)state.playing=false;
+}
+
+function syncNearbyEmbeds(focusCard){
+  if(PREVIEW||!focusCard)return;
+  const desired=new Set();
+  if(focusCard._video)desired.add(focusCard);
+  for(const direction of ['previousElementSibling','nextElementSibling']){
+    let cursor=focusCard[direction];
+    while(cursor&&!cursor._video)cursor=cursor[direction];
+    if(cursor)desired.add(cursor);
+  }
+  desired.forEach(ensureCardEmbed);
+  document.querySelectorAll('#feed .card[data-vid]').forEach(card=>{if(!desired.has(card))unloadCardEmbed(card)});
+}
+
 function buildTipCard(tip,n){
   const card=el('div','card tip');
   const box=el('div','tipbox');
@@ -900,11 +1020,12 @@ function buildShuffledFeed(){
 }
 
 /* ── render feed ─────────────────────────────────────────────── */
-let feedObs=null;
+let feedObs=null,feedResizeObs=null;
 function renderFeed(){
   const feedEl=document.getElementById('feed');feedEl.innerHTML='';cardState.clear();activeCard=null;activeIframe=null;
   if(feedObs){feedObs.disconnect();feedObs=null}
-  const items=shuffledFeed.filter(it=>it.kind==='tip'||(longformOn||!it.data.long));
+  if(feedResizeObs){feedResizeObs.disconnect();feedResizeObs=null}
+  const items=shuffledFeed.filter(it=>it.kind==='tip'||((showTikTok||it.data.type!=='tt')&&(longformOn||!it.data.long)));
   let tn=0;
   items.forEach(it=>{
     const c=it.kind==='video'?buildVideoCard(it.data):buildTipCard(it.data,++tn);
@@ -913,22 +1034,24 @@ function renderFeed(){
   /* height observer so cards fill the scroll container */
   const wrap=feedEl;
   function setH(){const h=wrap.clientHeight;feedEl.querySelectorAll('.card').forEach(c=>c.style.height=h+'px')}
-  const ro=new ResizeObserver(setH);ro.observe(wrap);setH();
+  feedResizeObs=new ResizeObserver(setH);feedResizeObs.observe(wrap);setH();
   feedObs=new IntersectionObserver(entries=>{
     entries.forEach(en=>{
       const card=en.target;
       if(en.intersectionRatio>=0.6){
         if(activeCard&&activeCard!==card){ytCmd(activeCard,'pauseVideo');const s=cardState.get(activeCard);if(s)s.playing=false}
         activeCard=card;
+        syncNearbyEmbeds(card);
         const iframe=card.querySelector('iframe');activeIframe=iframe||null;
         const st=cardState.get(card);
-        if(st&&st.kind==='yt'&&!PREVIEW){ytCmd(card,'playVideo');if(muted)ytCmd(card,'mute');else ytCmd(card,'unMute');st.playing=true;card.classList.remove('paused')}
+        if(st&&st.kind==='yt'&&!PREVIEW&&iframe){ytCmd(card,'playVideo');muted?ytCmd(card,'mute'):ytCmd(card,'unMute');st.playing=true;card.classList.remove('paused')}
       }else if(card===activeCard&&en.intersectionRatio<0.4){
         ytCmd(card,'pauseVideo');const st=cardState.get(card);if(st)st.playing=false;
       }
     });
   },{root:feedEl,threshold:[0.4,0.6]});
   feedEl.querySelectorAll('.card').forEach(c=>feedObs.observe(c));
+  syncNearbyEmbeds(feedEl.firstElementChild);
 }
 
 /* ── search ──────────────────────────────────────────────────── */
@@ -943,7 +1066,7 @@ function renderSearch(q){
      ['CharacterBody2D','https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html'],
      ['Node2D','https://docs.godotengine.org/en/stable/classes/class_node2d.html'],
      ['Area2D','https://docs.godotengine.org/en/stable/classes/class_area2d.html'],
-    ].forEach(([label,url])=>{const b=el('button','doclinkbtn',label);b.addEventListener('click',()=>window.open(url,'_blank'));dl.appendChild(b)});
+    ].forEach(([label,url])=>{const b=el('button','doclinkbtn',label);b.type='button';b.addEventListener('click',()=>openExternal(url));dl.appendChild(b)});
     host.appendChild(dl);return;
   }
   const ql=q.toLowerCase();
@@ -963,47 +1086,88 @@ function renderSearch(q){
   [['Search docs for "'+q+'"','https://docs.godotengine.org/en/stable/search.html?q='+encodeURIComponent(q)],
    ['GDQuest search','https://www.gdquest.com/?s='+encodeURIComponent(q)],
    ['Ask on Godot QA','https://ask.godotengine.org/search?q='+encodeURIComponent(q)],
-  ].forEach(([label,url])=>{const b=el('button','doclinkbtn',label);b.addEventListener('click',()=>window.open(url,'_blank'));dl.appendChild(b)});
+  ].forEach(([label,url])=>{const b=el('button','doclinkbtn',label);b.type='button';b.addEventListener('click',()=>openExternal(url));dl.appendChild(b)});
   host.appendChild(dl);
 }
 
 document.getElementById('searchInput').addEventListener('input',e=>renderSearch(e.target.value));
 
 /* ── flashcards ──────────────────────────────────────────────── */
-let allCards=[], fcIdx=0, fcStudyMode=true;
+let allCards=[],fcQueue=[],fcProgress={},fcSessionTotal=0,fcSessionDone=0;
+const FC_DAY=24*60*60*1000;
 
-function loadFcCards(){
-  const custom=JSON.parse(localStorage.getItem('gt_fc_custom')||'[]');
+function flashcardKey(card){return (card._user?'custom:':'built-in:')+card.q}
+function loadFcCards(reviewAll=false){
+  const rawCustom=readLocal('gt_fc_custom',[]);
+  const custom=Array.isArray(rawCustom)?rawCustom.filter(c=>c&&typeof c.q==='string'&&typeof c.a==='string'):[];
   allCards=[...BUILT_IN_CARDS,...MY_CARDS,...custom.map(c=>({...c,_user:true}))];
-  fcIdx=0;
+  const rawProgress=readLocal('gt_fc_progress',{});
+  fcProgress=rawProgress&&typeof rawProgress==='object'&&!Array.isArray(rawProgress)?rawProgress:{};
+  const now=Date.now();
+  const due=allCards.filter(card=>{const progress=fcProgress[flashcardKey(card)];return !progress||!Number.isFinite(progress.due)||progress.due<=now});
+  fcQueue=shuffle(reviewAll?[...allCards]:due);
+  fcSessionTotal=fcQueue.length;fcSessionDone=0;
+}
+
+function gradeFlashcard(card,understood){
+  const key=flashcardKey(card);
+  const previous=fcProgress[key]||{streak:0};
+  if(understood){
+    const streak=Math.min((Number(previous.streak)||0)+1,5);
+    const intervals=[1,3,7,14,30];
+    fcProgress[key]={streak,due:Date.now()+intervals[streak-1]*FC_DAY,lastResult:'got-it'};
+    fcQueue.shift();fcSessionDone++;
+  }else{
+    fcProgress[key]={streak:0,due:Date.now(),lastResult:'skip'};
+    fcQueue.push(fcQueue.shift());
+  }
+  writeLocal('gt_fc_progress',fcProgress);
+  renderFcStudy();
+}
+
+function flashcardStatus(card){
+  const progress=fcProgress[flashcardKey(card)];
+  if(!progress)return 'new';
+  if(!Number.isFinite(progress.due)||progress.due<=Date.now())return 'due now';
+  return 'streak '+(progress.streak||0)+' · review '+new Date(progress.due).toLocaleDateString();
 }
 
 function renderFcStudy(){
   const host=document.getElementById('fcStudyView');host.innerHTML='';
   if(!allCards.length){host.appendChild(el('div','search-empty','No cards. Add some!'));return}
-  const card=allCards[fcIdx%allCards.length];
+  if(!fcQueue.length){
+    const empty=el('div','search-empty');
+    empty.appendChild(el('div','','You are caught up. Learned cards return when they are due.'));
+    const review=el('button','primary','review all now');review.type='button';
+    review.addEventListener('click',()=>{loadFcCards(true);renderFcStudy()});
+    empty.appendChild(review);host.appendChild(empty);return;
+  }
+  const card=fcQueue[0];
   const wrap=el('div','fc-study-wrap');
 
   const outer=el('div','fc-card-outer');
+  outer.tabIndex=0;outer.setAttribute('role','button');outer.setAttribute('aria-label','Flip flashcard to show the answer');outer.setAttribute('aria-pressed','false');
   const inner=el('div','fc-inner');
   const front=el('div','fc-face front');
   const back=el('div','fc-face back');
-  front.appendChild(el('div','fc-label','QUESTION '+(fcIdx%allCards.length+1)+' / '+allCards.length));
+  front.appendChild(el('div','fc-label','QUESTION '+Math.min(fcSessionDone+1,fcSessionTotal)+' / '+fcSessionTotal));
   front.appendChild(el('div','fc-q',card.q));
   back.appendChild(el('div','fc-label','ANSWER'));
   back.appendChild(el('div','fc-a',card.a));
   if(card.code){const pre=el('pre','fc-code',card.code.replace(/\\n/g,'\n'));back.appendChild(pre)}
   inner.appendChild(front);inner.appendChild(back);outer.appendChild(inner);
-  outer.addEventListener('click',()=>outer.classList.toggle('flipped'));
+  function flip(){const flipped=outer.classList.toggle('flipped');outer.setAttribute('aria-pressed',String(flipped));outer.setAttribute('aria-label',flipped?'Flip flashcard to show the question':'Flip flashcard to show the answer')}
+  outer.addEventListener('click',flip);
+  outer.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}});
   wrap.appendChild(outer);
 
   const acts=el('div','fc-actions');
-  const prog=el('div','fc-prog','tap card to flip');
+  const prog=el('div','fc-prog','tap or press Enter to flip');
   acts.appendChild(prog);
-  const skip=el('button','btn-skip','skip');
-  const got=el('button','btn-got','got it');
-  skip.addEventListener('click',()=>{fcIdx=(fcIdx+1)%allCards.length;renderFcStudy()});
-  got.addEventListener('click',()=>{fcIdx=(fcIdx+1)%allCards.length;renderFcStudy()});
+  const skip=labelButton(el('button','btn-skip','skip'),'Skip and show this card again soon');
+  const got=labelButton(el('button','btn-got','got it'),'Mark understood and schedule a later review');
+  skip.addEventListener('click',()=>gradeFlashcard(card,false));
+  got.addEventListener('click',()=>gradeFlashcard(card,true));
   acts.appendChild(skip);acts.appendChild(got);
   wrap.appendChild(acts);
   host.appendChild(wrap);
@@ -1012,18 +1176,18 @@ function renderFcStudy(){
 function renderFcList(){
   const host=document.getElementById('fcListView');host.innerHTML='';
   const lw=el('div','fc-list-wrap');
-  allCards.forEach((card,i)=>{
+  allCards.forEach(card=>{
     const row=el('div','fc-list-item');
     const m=el('div','');
     m.appendChild(el('div','fq',card.q));
-    if(card._user)m.appendChild(el('div','fcust','custom'));
+    m.appendChild(el('div','fcust',(card._user?'custom · ':'')+flashcardStatus(card)));
     row.appendChild(m);
     if(card._user){
-      const del=el('button','','×');
+      const del=labelButton(el('button','','×'),'Delete custom flashcard');
       del.addEventListener('click',()=>{
-        const custom=JSON.parse(localStorage.getItem('gt_fc_custom')||'[]');
+        const stored=readLocal('gt_fc_custom',[]);const custom=Array.isArray(stored)?stored:[];
         const newCustom=custom.filter(c=>c.q!==card.q);
-        localStorage.setItem('gt_fc_custom',JSON.stringify(newCustom));
+        writeLocal('gt_fc_custom',newCustom);delete fcProgress[flashcardKey(card)];writeLocal('gt_fc_progress',fcProgress);
         loadFcCards();renderFcList();renderFcStudy();toast('card deleted');
       });
       row.appendChild(del);
@@ -1039,9 +1203,9 @@ document.getElementById('fcAddBtn').addEventListener('click',()=>{
   const code=document.getElementById('fcCode').value.trim();
   const msg=document.getElementById('fcAddMsg');
   if(!q||!a){msg.textContent='question and answer are required';msg.style.color='var(--red)';return}
-  const custom=JSON.parse(localStorage.getItem('gt_fc_custom')||'[]');
+  const stored=readLocal('gt_fc_custom',[]);const custom=Array.isArray(stored)?stored:[];
   custom.push({q,a,code:code||undefined});
-  localStorage.setItem('gt_fc_custom',JSON.stringify(custom));
+  if(!writeLocal('gt_fc_custom',custom)){msg.textContent='storage is unavailable on this device';msg.style.color='var(--red)';return}
   document.getElementById('fcQ').value='';document.getElementById('fcA').value='';document.getElementById('fcCode').value='';
   msg.textContent='card added!';msg.style.color='var(--grn)';
   setTimeout(()=>msg.textContent='',2000);
@@ -1051,8 +1215,10 @@ document.getElementById('fcAddBtn').addEventListener('click',()=>{
 /* fc mode buttons */
 function setFcMode(mode){
   ['Study','List','Add'].forEach(m=>{
-    document.getElementById('fcMode'+m).classList.toggle('active',m.toLowerCase()===mode);
-    document.getElementById('fc'+m+'View').style.display=m.toLowerCase()===mode?'flex':'none';
+    const active=m.toLowerCase()===mode;
+    document.getElementById('fcMode'+m).classList.toggle('active',active);
+    document.getElementById('fcMode'+m).setAttribute('aria-selected',String(active));
+    document.getElementById('fc'+m+'View').style.display=active?'flex':'none';
   });
 }
 document.getElementById('fcModeStudy').addEventListener('click',()=>{setFcMode('study');renderFcStudy()});
@@ -1206,29 +1372,37 @@ function renderSaved(){
     m.appendChild(el('div','sis',(v.type==='yt'?'youtube':'tiktok')+(v.creator?' / '+v.creator:'')));
     row.appendChild(m);
     const acts=el('div','siact');
-    const sh=el('button');sh.appendChild(svgUse('ic-share'));sh.addEventListener('click',e=>{e.stopPropagation();shareUrl(itemUrl(v),v.title)});
-    const del=el('button');del.appendChild(svgUse('ic-trash'));
+    const sh=labelButton(el('button'),'Share saved video');sh.appendChild(svgUse('ic-share'));sh.addEventListener('click',e=>{e.stopPropagation();shareUrl(itemUrl(v),v.title)});
+    const del=labelButton(el('button'),'Remove saved video');del.appendChild(svgUse('ic-trash'));
     del.addEventListener('click',async e=>{
       e.stopPropagation();savedIds=savedIds.filter(x=>x!==id);delete savedItems[id];
       await store.set('gt_saved',{ids:savedIds,items:savedItems});renderSaved();renderFeed();toast('removed');
     });
     acts.appendChild(sh);acts.appendChild(del);row.appendChild(acts);
-    row.addEventListener('click',()=>openModal(v));host.appendChild(row);
+    row.tabIndex=0;row.setAttribute('role','button');row.setAttribute('aria-label','Play '+v.title);
+    row.addEventListener('click',()=>openModal(v));row.addEventListener('keydown',e=>{if(e.key==='Enter'){openModal(v)}});host.appendChild(row);
   });
 }
 
 /* ── modal ───────────────────────────────────────────────────── */
 function openModal(v){
-  if(PREVIEW){window.open(itemUrl(v),'_blank');return}
+  if(PREVIEW){openExternal(itemUrl(v));return}
+  modalReturnFocus=document.activeElement;
   const f=document.createElement('iframe');
-  f.setAttribute('allow','autoplay; encrypted-media; fullscreen; picture-in-picture');f.setAttribute('allowfullscreen','');
+  f.setAttribute('allow','autoplay; encrypted-media; fullscreen; picture-in-picture');f.setAttribute('allowfullscreen','');f.title=v.title;
   f.src=v.type==='yt'?'https://www.youtube-nocookie.com/embed/'+encodeURIComponent(v.vid)+'?autoplay=1&rel=0':'https://www.tiktok.com/embed/v2/'+encodeURIComponent(v.vid);
   document.getElementById('mhost').innerHTML='';document.getElementById('mhost').appendChild(f);
   document.getElementById('mtitle').textContent=v.title;
   if(activeCard){ytCmd(activeCard,'pauseVideo');const st=cardState.get(activeCard);if(st)st.playing=false}
-  document.getElementById('modal').classList.add('open');
+  const modal=document.getElementById('modal');modal.classList.add('open');modal.setAttribute('aria-hidden','false');
+  document.getElementById('mclose').focus();
 }
-document.getElementById('mclose').addEventListener('click',()=>{document.getElementById('modal').classList.remove('open');document.getElementById('mhost').innerHTML=''});
+function closeModal(){
+  const modal=document.getElementById('modal');if(!modal.classList.contains('open'))return;
+  modal.classList.remove('open');modal.setAttribute('aria-hidden','true');document.getElementById('mhost').innerHTML='';
+  if(modalReturnFocus&&typeof modalReturnFocus.focus==='function')modalReturnFocus.focus();modalReturnFocus=null;
+}
+document.getElementById('mclose').addEventListener('click',closeModal);
 
 /* ── share ───────────────────────────────────────────────────── */
 async function shareUrl(url,title){
@@ -1244,9 +1418,10 @@ document.getElementById('addBtn').addEventListener('click',async()=>{
   msg.className='';
   if(!p){msg.className='err';msg.textContent='could not parse that url';return}
   if(p.type==='tt_short'){msg.className='err';msg.textContent='shortened tiktok link — open it in a browser and copy the full url';return}
+  if([...userVideos,...SEED_VIDEOS].some(video=>video.type===p.type&&video.vid===p.vid)){msg.className='err';msg.textContent='that video is already in the feed';return}
   const title=document.getElementById('addTitle').value.trim()||(p.type==='yt'?'YouTube video':'TikTok video');
-  const v={id:p.type+'_'+p.vid+'_'+Date.now(),type:p.type,vid:p.vid,handle:p.handle||null,title,creator:document.getElementById('addCreator').value.trim(),long:document.getElementById('addLong').checked,user:true};
-  userVideos.unshift(v);await store.set('gt_uv',userVideos);
+  const v={id:p.type+'_'+p.vid+'_'+Date.now(),type:p.type,vid:p.vid,handle:p.handle||null,url:p.url||null,title,creator:document.getElementById('addCreator').value.trim(),long:document.getElementById('addLong').checked,user:true};
+  userVideos.unshift(v);if(!await store.set('gt_uv',userVideos)){userVideos.shift();msg.className='err';msg.textContent='storage is unavailable on this device';return}
   document.getElementById('addUrl').value='';document.getElementById('addTitle').value='';document.getElementById('addCreator').value='';document.getElementById('addLong').checked=false;
   msg.className='ok';msg.textContent='added! rebuilding feed...';
   buildShuffledFeed();renderFeed();renderUserList();
@@ -1262,7 +1437,7 @@ function renderUserList(){
     m.appendChild(el('div','sit',v.title));
     m.appendChild(el('div','sis',(v.type==='yt'?'youtube':'tiktok')+(v.long?' / longform':'')));
     row.appendChild(m);
-    const del=el('button');del.appendChild(svgUse('ic-trash'));
+    const del=labelButton(el('button'),'Delete added video');del.appendChild(svgUse('ic-trash'));
     del.addEventListener('click',async()=>{userVideos=userVideos.filter(x=>x.id!==v.id);await store.set('gt_uv',userVideos);buildShuffledFeed();renderFeed();renderUserList();toast('removed')});
     const da=el('div','siact');da.appendChild(del);row.appendChild(da);
     host.appendChild(row);
@@ -1271,34 +1446,33 @@ function renderUserList(){
 
 function renderSettings(){
   const host=document.getElementById('settingsArea');host.innerHTML='';
-  [{k:'showTT',label:'Show TikTok in feed',sub:'TikTok embeds keep their own controls — tap/pause and 2x speed do not apply'},{k:'showLong_dup',label:'Longform toggle (also in feed header)',sub:''}]
-  .forEach(({k,label,sub})=>{
-    if(k==='showLong_dup')return; // already exposed in feed header
-    const key='gt_'+k;
-    let val=JSON.parse(localStorage.getItem(key)||'true');
-    const row=el('div','toggle-row');
-    const tl=el('div','trlabel');
-    tl.appendChild(el('div','',label));
-    if(sub)tl.appendChild(el('div','',sub));
-    const knob=el('div','toggle-knob'+(val?' on':''));
-    row.appendChild(tl);row.appendChild(knob);
-    row.addEventListener('click',()=>{val=!val;localStorage.setItem(key,val);knob.classList.toggle('on',val);toast(label+': '+(val?'on':'off'))});
-    host.appendChild(row);
+  const label='Show TikTok in feed';
+  const row=el('button','toggle-row');row.type='button';row.setAttribute('aria-pressed',String(showTikTok));
+  const tl=el('div','trlabel');
+  tl.appendChild(el('div','',label));
+  tl.appendChild(el('div','','TikTok embeds keep their own controls. GodotTok gestures apply to YouTube only.'));
+  const knob=el('div','toggle-knob'+(showTikTok?' on':''));knob.setAttribute('aria-hidden','true');
+  row.appendChild(tl);row.appendChild(knob);
+  row.addEventListener('click',async()=>{
+    showTikTok=!showTikTok;await store.set('gt_showTT',showTikTok);
+    knob.classList.toggle('on',showTikTok);row.setAttribute('aria-pressed',String(showTikTok));renderFeed();
+    toast(label+': '+(showTikTok?'on':'off'));
   });
+  host.appendChild(row);
 }
 
 /* ── docs ────────────────────────────────────────────────────── */
-let docsFrame=null,currentDoc='https://docs.godotengine.org/en/stable/',docsLoaded=false,learnLoaded=false,recipesLoaded=false;
+let docsFrame=null,currentDoc='https://docs.godotengine.org/en/stable/';
 function loadDoc(url){
   currentDoc=url;
-  if(PREVIEW){window.open(url,'_blank');return}
-  if(!docsFrame){docsFrame=document.createElement('iframe');document.getElementById('docsHost').appendChild(docsFrame)}
+  if(PREVIEW){openExternal(url);return}
+  if(!docsFrame){docsFrame=document.createElement('iframe');docsFrame.title='Godot documentation';document.getElementById('docsHost').appendChild(docsFrame)}
   docsFrame.src=url;
 }
 document.querySelectorAll('.chip[data-doc]').forEach(c=>{
   c.addEventListener('click',()=>{document.querySelectorAll('.chip[data-doc]').forEach(x=>x.classList.remove('sel'));c.classList.add('sel');currentDoc=c.dataset.doc;loadDoc(c.dataset.doc)});
 });
-document.getElementById('docsExt').addEventListener('click',()=>window.open(currentDoc,'_blank'));
+document.getElementById('docsExt').addEventListener('click',()=>openExternal(currentDoc));
 
 /* ── tabs ────────────────────────────────────────────────────── */
 let learnInitDone=false;
@@ -1308,10 +1482,10 @@ function initLearn(){
     const host=document.getElementById('learnHost');host.style.background='var(--n0)';
     const p=el('div','pagefall');
     const img=document.createElement('img');img.src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/godot/godot-original.svg';img.alt='';
-    p.appendChild(img);p.appendChild(el('div','ft','embed blocked in claude preview'));p.appendChild(el('div','fs','works when the file is opened or hosted outside claude'));
-    const b=el('button','fb','open gdquest learn');b.addEventListener('click',()=>window.open('https://gdquest.github.io/learn-gdscript/','_blank'));p.appendChild(b);host.appendChild(p);
+    p.appendChild(img);p.appendChild(el('div','ft','embed disabled in preview mode'));p.appendChild(el('div','fs','Open the hosted app without ?preview=1 to use the learning app.'));
+    const b=el('button','fb','open gdquest learn');b.addEventListener('click',()=>openExternal('https://gdquest.github.io/learn-gdscript/'));p.appendChild(b);host.appendChild(p);
   } else {
-    const f=document.createElement('iframe');f.src='https://gdquest.github.io/learn-gdscript/';f.setAttribute('allow','fullscreen; autoplay');document.getElementById('learnHost').appendChild(f);
+    const f=document.createElement('iframe');f.src='https://gdquest.github.io/learn-gdscript/';f.title='GDQuest Learn GDScript';f.setAttribute('allow','fullscreen; autoplay');document.getElementById('learnHost').appendChild(f);
   }
 }
 
@@ -1322,8 +1496,8 @@ function initDocs(){
     const host=document.getElementById('docsHost');host.style.background='var(--n0)';
     const p=el('div','pagefall');
     const img=document.createElement('img');img.src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/godot/godot-original.svg';img.alt='';
-    p.appendChild(img);p.appendChild(el('div','ft','embed blocked in claude preview'));p.appendChild(el('div','fs','docs load fully when hosted outside claude'));
-    const b=el('button','fb','open godot docs');b.addEventListener('click',()=>window.open('https://docs.godotengine.org/en/stable/','_blank'));p.appendChild(b);host.appendChild(p);
+    p.appendChild(img);p.appendChild(el('div','ft','embed disabled in preview mode'));p.appendChild(el('div','fs','Open the hosted app without ?preview=1 to use embedded documentation.'));
+    const b=el('button','fb','open godot docs');b.addEventListener('click',()=>openExternal('https://docs.godotengine.org/en/stable/'));p.appendChild(b);host.appendChild(p);
   } else {
     loadDoc('https://docs.godotengine.org/en/stable/');
   }
@@ -1334,16 +1508,17 @@ function initRecipes(){
     const host=document.getElementById('recipesHost');host.style.background='var(--n0)';
     const p=el('div','pagefall');
     const img=document.createElement('img');img.src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/godot/godot-original.svg';img.alt='';
-    p.appendChild(img);p.appendChild(el('div','ft','embed blocked in claude preview'));
-    const b=el('button','fb','open godot recipes');b.addEventListener('click',()=>window.open('https://kidscancode.org/godot_recipes/4.x/','_blank'));p.appendChild(b);host.appendChild(p);
+    p.appendChild(img);p.appendChild(el('div','ft','embed disabled in preview mode'));
+    const b=el('button','fb','open godot recipes');b.addEventListener('click',()=>openExternal('https://kidscancode.org/godot_recipes/4.x/'));p.appendChild(b);host.appendChild(p);
   } else {
-    const f=document.createElement('iframe');f.src='https://kidscancode.org/godot_recipes/4.x/';document.getElementById('recipesHost').appendChild(f);
+    const f=document.createElement('iframe');f.src='https://kidscancode.org/godot_recipes/4.x/';f.title='KidsCanCode Godot recipes';document.getElementById('recipesHost').appendChild(f);
   }
 }
 
 function activateSubtab(group, id){
-  document.querySelectorAll('#'+group+'-stabs .stab').forEach(b=>b.classList.toggle('active',b.dataset.stab===id));
-  document.querySelectorAll('#sv-'+group.replace('-stabs','')+'~*').forEach(()=>{});
+  document.querySelectorAll('#'+group+'-stabs .stab').forEach(b=>{
+    const selected=b.dataset.stab===id;b.classList.toggle('active',selected);b.setAttribute('aria-selected',String(selected));
+  });
   // handle subviews for learn and ref
   if(group==='learn'){
     document.getElementById('sv-gdquest').classList.toggle('active',id==='gdquest');
@@ -1364,27 +1539,52 @@ document.querySelectorAll('#ref-stabs .stab').forEach(b=>b.addEventListener('cli
 
 document.querySelectorAll('#tabbar button').forEach(btn=>{
   btn.addEventListener('click',()=>{
-    document.querySelectorAll('#tabbar button').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
+    document.querySelectorAll('#tabbar button').forEach(b=>{b.classList.remove('active');b.removeAttribute('aria-current')});
+    btn.classList.add('active');btn.setAttribute('aria-current','page');
     const v=btn.dataset.view;
     document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
     document.getElementById('view-'+v).classList.add('active');
     if(v!=='feed'&&activeCard){ytCmd(activeCard,'pauseVideo');const st=cardState.get(activeCard);if(st){st.playing=false;activeCard.classList.add('paused')}}
-    if(v==='feed'&&activeCard){const st=cardState.get(activeCard);if(st&&st.kind==='yt'&&!PREVIEW){ytCmd(activeCard,'playVideo');if(muted)ytCmd(activeCard,'mute');st.playing=true;activeCard.classList.remove('paused')}}
+    if(v==='feed'&&activeCard){const st=cardState.get(activeCard);if(st&&st.kind==='yt'&&!PREVIEW){ensureCardEmbed(activeCard);ytCmd(activeCard,'playVideo');muted?ytCmd(activeCard,'mute'):ytCmd(activeCard,'unMute');st.playing=true;activeCard.classList.remove('paused')}}
     if(v==='search')document.getElementById('searchInput').focus();
   });
 });
 
 document.getElementById('hintsOk').addEventListener('click',async()=>{document.getElementById('hints').classList.remove('show');await store.set('gt_hints',true)});
-document.getElementById('longToggle').addEventListener('click',async()=>{longformOn=!longformOn;document.getElementById('longToggle').textContent='longform: '+(longformOn?'on':'off');document.getElementById('longToggle').classList.toggle('on',longformOn);await store.set('gt_lf',longformOn);renderFeed()});
+document.getElementById('longToggle').addEventListener('click',async()=>{
+  longformOn=!longformOn;const toggle=document.getElementById('longToggle');toggle.textContent='longform: '+(longformOn?'on':'off');toggle.classList.toggle('on',longformOn);toggle.setAttribute('aria-pressed',String(longformOn));await store.set('gt_lf',longformOn);renderFeed();
+});
+
+function moveFeed(direction){
+  const cards=[...document.querySelectorAll('#feed .card')];if(!cards.length)return;
+  const index=Math.max(0,cards.indexOf(activeCard));
+  const target=cards[Math.max(0,Math.min(cards.length-1,index+direction))];
+  if(target)target.scrollIntoView({behavior:reduceMotion?'auto':'smooth',block:'start'});
+}
+
+document.addEventListener('keydown',event=>{
+  if(event.key==='Escape'&&document.getElementById('modal').classList.contains('open')){event.preventDefault();closeModal();return}
+  const target=event.target;
+  if(target&&(/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)||target.isContentEditable))return;
+  if(target&&target.closest&&target.closest('button,a,[role="slider"]'))return;
+  if(!document.getElementById('view-feed').classList.contains('active'))return;
+  if(event.key===' '){event.preventDefault();if(activeCard)togglePlay(activeCard)}
+  else if(event.key==='ArrowUp'){event.preventDefault();moveFeed(-1)}
+  else if(event.key==='ArrowDown'){event.preventDefault();moveFeed(1)}
+  else if(event.key==='ArrowLeft'){event.preventDefault();if(activeCard)seekRelative(activeCard,-10)}
+  else if(event.key==='ArrowRight'){event.preventDefault();if(activeCard)seekRelative(activeCard,10)}
+  else if(event.key.toLowerCase()==='m'){event.preventDefault();setMuted(!muted)}
+  else if(event.key.toLowerCase()==='f'&&activeCard){event.preventDefault();if(activeCard.requestFullscreen)activeCard.requestFullscreen()}
+});
 
 /* ── init ────────────────────────────────────────────────────── */
 (async function init(){
-  userVideos=await store.get('gt_uv')||[];
-  const sv=await store.get('gt_saved');if(sv){savedIds=sv.ids||[];savedItems=sv.items||{}}
-  longformOn=await store.get('gt_lf')||false;
-  document.getElementById('longToggle').textContent='longform: '+(longformOn?'on':'off');
-  document.getElementById('longToggle').classList.toggle('on',longformOn);
+  const storedVideos=await store.get('gt_uv');userVideos=Array.isArray(storedVideos)?storedVideos.filter(v=>v&&v.id&&v.type&&v.vid):[];
+  const sv=await store.get('gt_saved');if(sv&&typeof sv==='object'){savedIds=Array.isArray(sv.ids)?sv.ids:[];savedItems=sv.items&&typeof sv.items==='object'?sv.items:{}}
+  const storedLongform=await store.get('gt_lf');longformOn=typeof storedLongform==='boolean'?storedLongform:false;
+  const storedTikTok=await store.get('gt_showTT');showTikTok=typeof storedTikTok==='boolean'?storedTikTok:true;
+  const longToggle=document.getElementById('longToggle');longToggle.textContent='longform: '+(longformOn?'on':'off');
+  longToggle.classList.toggle('on',longformOn);longToggle.setAttribute('aria-pressed',String(longformOn));
   const seenHints=await store.get('gt_hints');
   if(!seenHints)document.getElementById('hints').classList.add('show');
   buildShuffledFeed();
@@ -1395,10 +1595,13 @@ document.getElementById('longToggle').addEventListener('click',async()=>{longfor
   buildCheatsheet();
   renderSearch('');
   loadFcCards();
+  if('serviceWorker' in navigator&&window.location.protocol.startsWith('http')){
+    navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  }
   if(PREVIEW){
     const b=el('div','pbanner');
-    const tx=el('span');tx.innerHTML='<b>preview mode:</b> video embeds, docs, and learn app are blocked by the claude sandbox. download godottok.html + icon.png and open or host them.';
-    const x=el('button','','×');x.addEventListener('click',()=>b.remove());
+    const tx=el('span');tx.innerHTML='<b>preview mode:</b> external video and learning embeds are disabled. Remove <code>?preview=1</code> to load them.';
+    const x=labelButton(el('button','','×'),'Close preview notice');x.addEventListener('click',()=>b.remove());
     b.appendChild(tx);b.appendChild(x);document.body.appendChild(b);
   }
 })();
