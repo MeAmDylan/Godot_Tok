@@ -73,11 +73,13 @@
       <div class="search-results" id="searchResults"></div>
     </section>
 
-    <!-- LEARN: GDQuest + Flashcards -->
+    <!-- LEARN -->
     <section class="view" id="view-learn">
       <div class="stabs" id="learn-stabs" role="tablist" aria-label="Learning tools">
         <button class="stab active" type="button" role="tab" aria-selected="true" data-stab="gdquest">GDQuest app</button>
         <button class="stab" type="button" role="tab" aria-selected="false" data-stab="flashcards">Flashcards</button>
+        <button class="stab" type="button" role="tab" aria-selected="false" data-stab="quizzes">Quizzes</button>
+        <button class="stab" type="button" role="tab" aria-selected="false" data-stab="guides">Guides</button>
       </div>
       <div class="subview active" id="sv-gdquest">
         <div class="pagebar">
@@ -105,19 +107,33 @@
               <input type="text" id="fcA" placeholder="e.g. CharacterBody2D">
               <label>Code snippet (optional, shown on back)</label>
               <input type="text" id="fcCode" placeholder="e.g. move_and_slide()">
+              <label for="fcCategory">Category</label>
+              <select id="fcCategory"></select>
+              <label for="fcTopic">Topic</label>
+              <input type="text" id="fcTopic" placeholder="e.g. Player movement">
+              <label for="fcDifficulty">Difficulty</label>
+              <select id="fcDifficulty">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
               <button class="primary" id="fcAddBtn">Add flashcard</button>
               <div id="fcAddMsg" style="font-family:var(--mono);font-size:11px;margin-top:6px;color:var(--grn)"></div>
             </div>
             <details>
               <summary>add cards in the HTML file</summary>
               <div class="dbody">
-                <p>Open <code>index.html</code> in a text editor. Search for <code>MY_CARDS</code>. You will find a clearly marked array near the top of the script section. Add entries like:</p>
-                <p><code>{q:'Your question here', a:'Your answer here'},</code></p>
-                <p>Optionally add <code>code:'your_snippet()'</code> to show a code block on the back. Save the file and upload it to GitHub.</p>
+                <p>Built-in learning content lives in <code>js/data/learning.js</code>. Every built-in item requires a stable ID, category, topic, difficulty, Godot version, and approved source.</p>
               </div>
             </details>
           </div>
         </div>
+      </div>
+      <div class="subview" id="sv-quizzes">
+        <div class="learning-page" id="quizApp"></div>
+      </div>
+      <div class="subview" id="sv-guides">
+        <div class="learning-page" id="guidesApp"></div>
       </div>
     </section>
 
@@ -131,13 +147,13 @@
       <div class="subview active" id="sv-docs">
         <div class="pagebar">
           <span class="ptitle">docs/</span>
-          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/">Home</button>
-          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html">GDScript</button>
-          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html">Signals</button>
-          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html">CharBody2D</button>
-          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/tutorials/2d/index.html">2D</button>
-          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/tutorials/shaders/index.html">Shaders</button>
-          <button class="chip" data-doc="https://docs.godotengine.org/en/stable/classes/index.html">Classes</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/4.7/">Home</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/4.7/tutorials/scripting/gdscript/gdscript_basics.html">GDScript</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/4.7/getting_started/step_by_step/signals.html">Signals</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/4.7/classes/class_characterbody2d.html">CharBody2D</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/4.7/tutorials/2d/index.html">2D</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/4.7/tutorials/shaders/index.html">Shaders</button>
+          <button class="chip" data-doc="https://docs.godotengine.org/en/4.7/classes/index.html">Classes</button>
           <button class="extbtn" id="docsExt">&#8599; open</button>
         </div>
         <div class="framehost" id="docsHost"></div>
@@ -239,5 +255,5 @@
   </div>
   <div class="mhost" id="mhost"></div>
 </div>
-<div id="toast" role="status" aria-live="polite"></div><script src="js/app.js"></script></body>
+<div id="toast" role="status" aria-live="polite"></div><script src="js/data/learning.js"></script><script src="js/learning-ui.js"></script><script src="js/app.js"></script></body>
 </html>

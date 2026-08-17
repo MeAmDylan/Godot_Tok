@@ -47,16 +47,8 @@ const SEED_VIDEOS = [
   {id:'yt_HRxw8Ecrqxk',type:'yt',vid:'HRxw8Ecrqxk',title:'Complete FREE Godot 4 Beginner Course 2025',creator:'Red Fools Studio',long:true},
 ];
 
-/* ================================================================
-   🃏  ADD CUSTOM FLASHCARDS HERE
-   {q:'Question text', a:'Answer text', code:'optional_snippet()'}
-   ================================================================ */
-const MY_CARDS = [
-  /* examples — uncomment and edit:
-  {q:'What node do I use for my player?', a:'CharacterBody2D — it gives you full manual control over movement via move_and_slide().'},
-  {q:'How do I preload a scene?', a:'var EnemyScene = preload("res://enemy.tscn")', code:'var e = EnemyScene.instantiate()\nadd_child(e)'},
-  */
-];
+const LEARNING=window.GodotTokLearning;
+const LEARNING_CATEGORIES=LEARNING.categories;
 
 /* ── tips ─────────────────────────────────────────────────────── */
 const TIPS = [
@@ -72,35 +64,6 @@ const TIPS = [
   {f:'delta.gd',t:'Use delta for manual position changes',p:'For manual motion use <code>position += velocity * delta</code>. For <code>CharacterBody2D</code>, set <code>velocity</code> in <code>_physics_process</code> and call <code>move_and_slide()</code>; it applies the physics timestep for you.'},
   {f:'audio.gd',t:'Audio is half the experience',p:'Even rough placeholder sounds beat silence — players forgive simple art far faster than a mute game. Balance with audio buses early so you do not have to redo it at the end.'},
   {f:'marketing.gd',t:'Marketing starts at the prototype',p:'Post short clips of your juiciest moments while you build. An audience grows slowly. The day your store page goes live should not be the first day strangers hear about your game.'},
-];
-
-/* ── built-in flashcards ─────────────────────────────────────── */
-const BUILT_IN_CARDS = [
-  {q:'How do you declare a typed variable?',a:'Use a colon after the name followed by the type.',code:'var speed: float = 300.0\nvar name: String = "Player"\nvar alive: bool = true'},
-  {q:'What is the syntax for a function with a return type?',a:'Put the return type after a -> arrow.',code:'func get_speed() -> float:\n    return speed\n\nfunc die() -> void:\n    queue_free()'},
-  {q:'What is the difference between _process and _physics_process?',a:'_process runs every rendered frame with variable delta. _physics_process runs at a fixed rate (60 Hz by default). Always use _physics_process for movement and physics.'},
-  {q:'How do you connect a signal in Godot 4?',a:'Use .connect() on the signal. You can connect in code or in the editor.',code:'area.body_entered.connect(_on_body_entered)\n\n# With a custom signal:\nsignal health_changed(val: int)\nhealth_changed.connect(_on_health_changed)'},
-  {q:'What does @export do?',a:'Makes a variable editable directly in the Godot Inspector without touching code. Useful for tuning values like speed or damage.',code:'@export var speed: float = 300.0\n@export var max_health: int = 100'},
-  {q:'What is @onready?',a:'Waits until the node enters the scene tree before assigning the variable. Use it for all node references.',code:'@onready var sprite = $Sprite2D\n@onready var anim = $AnimationPlayer'},
-  {q:'How do you get a node by path?',a:'Use the $ shorthand for direct children, or get_node() for deeper paths.',code:'var enemy = $Enemy\nvar hp_bar = get_node("UI/HBoxContainer/HPBar")'},
-  {q:'How do you emit a signal?',a:'Call .emit() on the signal. Pass arguments if the signal was declared with parameters.',code:'signal hit_taken(damage: int)\n\nhit_taken.emit(25)'},
-  {q:'What is call_deferred()?',a:'Queues a method to run safely at the end of the current frame. Use it when modifying the scene tree from inside a physics or signal callback.',code:'call_deferred("add_child", new_node)'},
-  {q:'How do you move a CharacterBody2D?',a:'Set the velocity vector and call move_and_slide() in _physics_process.',code:'func _physics_process(delta):\n    velocity.x = Input.get_axis("left","right") * speed\n    velocity.y += GRAVITY * delta\n    move_and_slide()'},
-  {q:'What is the match statement?',a:'A cleaner alternative to if/elif chains, similar to switch/case in other languages.',code:'match state:\n    "idle": play_idle()\n    "run": play_run()\n    "jump": play_jump()\n    _: pass  # default'},
-  {q:'How do you load and instance a scene?',a:'Preload at the top of the file for scenes you know you will need, or load() at runtime.',code:'var BulletScene = preload("res://bullet.tscn")\n\nfunc shoot():\n    var b = BulletScene.instantiate()\n    add_child(b)'},
-  {q:'What is an Autoload / singleton?',a:'A scene or script loaded once globally, accessible from any script. Add it in Project > Project Settings > Autoload. Good for game state, audio manager, and event bus.'},
-  {q:'How do you detect input?',a:'Use Input.is_action_pressed() for held actions and is_action_just_pressed() for single-frame triggers.',code:'if Input.is_action_pressed("move_right"):\n    velocity.x = speed\nif Input.is_action_just_pressed("jump"):\n    jump()'},
-  {q:'How do you change the current scene?',a:'Use get_tree().change_scene_to_file() for the most common case.',code:'get_tree().change_scene_to_file("res://level2.tscn")\n\n# Or with a preloaded scene:\nget_tree().change_scene_to_packed(LEVEL_SCENE)'},
-  {q:'What is queue_free() vs free()?',a:'queue_free() marks the node for deletion at the end of the current frame — safe to call at any time. free() deletes immediately and can crash if anything still holds a reference.'},
-  {q:'How do you use a Timer?',a:'Add a Timer node and connect its timeout signal, or create one in code and await it.',code:'# One-shot timer in code:\nvar timer = get_tree().create_timer(2.0)\nawait timer.timeout\nprint("2 seconds passed")'},
-  {q:'How do you tween a property?',a:'Create a Tween with create_tween() and call tween_property().',code:'var tw = create_tween()\ntw.tween_property(self, "position", target_pos, 0.3)\ntw.tween_property(self, "modulate:a", 0.0, 0.2)'},
-  {q:'What is the difference between Area2D and CollisionShape2D?',a:'Area2D is a node that detects overlaps and triggers signals. CollisionShape2D defines the actual shape geometry — it must be a child of a physics body or Area2D.'},
-  {q:'How do you save data to disk?',a:'Use FileAccess with JSON for structured data, or ConfigFile for simple key-value settings.',code:'var f = FileAccess.open("user://save.json", FileAccess.WRITE)\nf.store_string(JSON.stringify(save_data))\nf.close()'},
-  {q:'What does delta mean and why do you use it?',a:'Delta is the time in seconds since the last frame (e.g. 0.016 at 60 fps). Multiplying by delta makes your movement frame-rate independent so the game runs at the same speed on any hardware.'},
-  {q:'How do groups work in Godot?',a:'Nodes can belong to named groups. You can then call methods or send signals to all members of a group at once.',code:'# Add a node to group:\nadd_to_group("enemies")\n\n# Affect all enemies:\nget_tree().call_group("enemies", "take_damage", 10)'},
-  {q:'What is the Resource class for?',a:'Resources are data containers that can be saved as .tres files and shared between nodes. Use them for items, stats, spells, or any data you want to design in the inspector.'},
-  {q:'How do you use lerp for smooth movement?',a:'lerp() interpolates between two values. Use it with delta for smooth camera follow or UI transitions.',code:'position = lerp(position, target, 5.0 * delta)\ncam_zoom = lerp(cam_zoom, target_zoom, 8.0 * delta)'},
-  {q:'What is _ready() for?',a:'Called once when the node and all its children have entered the scene tree. Use it to initialise variables, connect signals, and run any setup that requires children to exist.'},
 ];
 
 /* ── storage adapter ─────────────────────────────────────────── */
@@ -665,12 +628,12 @@ function renderSearch(q){
   if(!q.trim()){
     host.innerHTML='<div class="search-empty">search videos, gdscript topics, or a godot class name</div>';
     const dl=el('div','doclinks');
-    [['All docs','https://docs.godotengine.org/en/stable/'],
-     ['GDScript basics','https://docs.godotengine.org/en/stable/tutorials/scripting/gdscript/gdscript_basics.html'],
-     ['Signals','https://docs.godotengine.org/en/stable/getting_started/step_by_step/signals.html'],
-     ['CharacterBody2D','https://docs.godotengine.org/en/stable/classes/class_characterbody2d.html'],
-     ['Node2D','https://docs.godotengine.org/en/stable/classes/class_node2d.html'],
-     ['Area2D','https://docs.godotengine.org/en/stable/classes/class_area2d.html'],
+    [['All docs','https://docs.godotengine.org/en/4.7/'],
+     ['GDScript basics','https://docs.godotengine.org/en/4.7/tutorials/scripting/gdscript/gdscript_basics.html'],
+     ['Signals','https://docs.godotengine.org/en/4.7/getting_started/step_by_step/signals.html'],
+     ['CharacterBody2D','https://docs.godotengine.org/en/4.7/classes/class_characterbody2d.html'],
+     ['Node2D','https://docs.godotengine.org/en/4.7/classes/class_node2d.html'],
+     ['Area2D','https://docs.godotengine.org/en/4.7/classes/class_area2d.html'],
     ].forEach(([label,url])=>{const b=el('button','doclinkbtn',label);b.type='button';b.addEventListener('click',()=>openExternal(url));dl.appendChild(b)});
     host.appendChild(dl);return;
   }
@@ -688,7 +651,7 @@ function renderSearch(q){
   }
   host.appendChild(el('div','search-section','godot docs'));
   const dl=el('div','doclinks');
-  [['Search docs for "'+q+'"','https://docs.godotengine.org/en/stable/search.html?q='+encodeURIComponent(q)],
+  [['Search docs for "'+q+'"','https://docs.godotengine.org/en/4.7/search.html?q='+encodeURIComponent(q)],
    ['GDQuest search','https://www.gdquest.com/?s='+encodeURIComponent(q)],
    ['Ask on Godot QA','https://ask.godotengine.org/search?q='+encodeURIComponent(q)],
   ].forEach(([label,url])=>{const b=el('button','doclinkbtn',label);b.type='button';b.addEventListener('click',()=>openExternal(url));dl.appendChild(b)});
@@ -697,138 +660,11 @@ function renderSearch(q){
 
 document.getElementById('searchInput').addEventListener('input',e=>renderSearch(e.target.value));
 
-/* ── flashcards ──────────────────────────────────────────────── */
-let allCards=[],fcQueue=[],fcProgress={},fcSessionTotal=0,fcSessionDone=0;
-const FC_DAY=24*60*60*1000;
-
-function flashcardKey(card){return (card._user?'custom:':'built-in:')+card.q}
-function loadFcCards(reviewAll=false){
-  const rawCustom=readLocal('gt_fc_custom',[]);
-  const custom=Array.isArray(rawCustom)?rawCustom.filter(c=>c&&typeof c.q==='string'&&typeof c.a==='string'):[];
-  allCards=[...BUILT_IN_CARDS,...MY_CARDS,...custom.map(c=>({...c,_user:true}))];
-  const rawProgress=readLocal('gt_fc_progress',{});
-  fcProgress=rawProgress&&typeof rawProgress==='object'&&!Array.isArray(rawProgress)?rawProgress:{};
-  const now=Date.now();
-  const due=allCards.filter(card=>{const progress=fcProgress[flashcardKey(card)];return !progress||!Number.isFinite(progress.due)||progress.due<=now});
-  fcQueue=shuffle(reviewAll?[...allCards]:due);
-  fcSessionTotal=fcQueue.length;fcSessionDone=0;
-}
-
-function gradeFlashcard(card,understood){
-  const key=flashcardKey(card);
-  const previous=fcProgress[key]||{streak:0};
-  if(understood){
-    const streak=Math.min((Number(previous.streak)||0)+1,5);
-    const intervals=[1,3,7,14,30];
-    fcProgress[key]={streak,due:Date.now()+intervals[streak-1]*FC_DAY,lastResult:'got-it'};
-    fcQueue.shift();fcSessionDone++;
-  }else{
-    fcProgress[key]={streak:0,due:Date.now(),lastResult:'skip'};
-    fcQueue.push(fcQueue.shift());
-  }
-  writeLocal('gt_fc_progress',fcProgress);
-  renderFcStudy();
-}
-
-function flashcardStatus(card){
-  const progress=fcProgress[flashcardKey(card)];
-  if(!progress)return 'new';
-  if(!Number.isFinite(progress.due)||progress.due<=Date.now())return 'due now';
-  return 'streak '+(progress.streak||0)+' · review '+new Date(progress.due).toLocaleDateString();
-}
-
-function renderFcStudy(){
-  const host=document.getElementById('fcStudyView');host.innerHTML='';
-  if(!allCards.length){host.appendChild(el('div','search-empty','No cards. Add some!'));return}
-  if(!fcQueue.length){
-    const empty=el('div','search-empty');
-    empty.appendChild(el('div','','You are caught up. Learned cards return when they are due.'));
-    const review=el('button','primary','review all now');review.type='button';
-    review.addEventListener('click',()=>{loadFcCards(true);renderFcStudy()});
-    empty.appendChild(review);host.appendChild(empty);return;
-  }
-  const card=fcQueue[0];
-  const wrap=el('div','fc-study-wrap');
-
-  const outer=el('div','fc-card-outer');
-  outer.tabIndex=0;outer.setAttribute('role','button');outer.setAttribute('aria-label','Flip flashcard to show the answer');outer.setAttribute('aria-pressed','false');
-  const inner=el('div','fc-inner');
-  const front=el('div','fc-face front');
-  const back=el('div','fc-face back');
-  front.appendChild(el('div','fc-label','QUESTION '+Math.min(fcSessionDone+1,fcSessionTotal)+' / '+fcSessionTotal));
-  front.appendChild(el('div','fc-q',card.q));
-  back.appendChild(el('div','fc-label','ANSWER'));
-  back.appendChild(el('div','fc-a',card.a));
-  if(card.code){const pre=el('pre','fc-code',card.code.replace(/\\n/g,'\n'));back.appendChild(pre)}
-  inner.appendChild(front);inner.appendChild(back);outer.appendChild(inner);
-  function flip(){const flipped=outer.classList.toggle('flipped');outer.setAttribute('aria-pressed',String(flipped));outer.setAttribute('aria-label',flipped?'Flip flashcard to show the question':'Flip flashcard to show the answer')}
-  outer.addEventListener('click',flip);
-  outer.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();flip()}});
-  wrap.appendChild(outer);
-
-  const acts=el('div','fc-actions');
-  const prog=el('div','fc-prog','tap or press Enter to flip');
-  acts.appendChild(prog);
-  const skip=labelButton(el('button','btn-skip','skip'),'Skip and show this card again soon');
-  const got=labelButton(el('button','btn-got','got it'),'Mark understood and schedule a later review');
-  skip.addEventListener('click',()=>gradeFlashcard(card,false));
-  got.addEventListener('click',()=>gradeFlashcard(card,true));
-  acts.appendChild(skip);acts.appendChild(got);
-  wrap.appendChild(acts);
-  host.appendChild(wrap);
-}
-
-function renderFcList(){
-  const host=document.getElementById('fcListView');host.innerHTML='';
-  const lw=el('div','fc-list-wrap');
-  allCards.forEach(card=>{
-    const row=el('div','fc-list-item');
-    const m=el('div','');
-    m.appendChild(el('div','fq',card.q));
-    m.appendChild(el('div','fcust',(card._user?'custom · ':'')+flashcardStatus(card)));
-    row.appendChild(m);
-    if(card._user){
-      const del=labelButton(el('button','','×'),'Delete custom flashcard');
-      del.addEventListener('click',()=>{
-        const stored=readLocal('gt_fc_custom',[]);const custom=Array.isArray(stored)?stored:[];
-        const newCustom=custom.filter(c=>c.q!==card.q);
-        writeLocal('gt_fc_custom',newCustom);delete fcProgress[flashcardKey(card)];writeLocal('gt_fc_progress',fcProgress);
-        loadFcCards();renderFcList();renderFcStudy();toast('card deleted');
-      });
-      row.appendChild(del);
-    }
-    lw.appendChild(row);
-  });
-  host.appendChild(lw);
-}
-
-document.getElementById('fcAddBtn').addEventListener('click',()=>{
-  const q=document.getElementById('fcQ').value.trim();
-  const a=document.getElementById('fcA').value.trim();
-  const code=document.getElementById('fcCode').value.trim();
-  const msg=document.getElementById('fcAddMsg');
-  if(!q||!a){msg.textContent='question and answer are required';msg.style.color='var(--red)';return}
-  const stored=readLocal('gt_fc_custom',[]);const custom=Array.isArray(stored)?stored:[];
-  custom.push({q,a,code:code||undefined});
-  if(!writeLocal('gt_fc_custom',custom)){msg.textContent='storage is unavailable on this device';msg.style.color='var(--red)';return}
-  document.getElementById('fcQ').value='';document.getElementById('fcA').value='';document.getElementById('fcCode').value='';
-  msg.textContent='card added!';msg.style.color='var(--grn)';
-  setTimeout(()=>msg.textContent='',2000);
-  loadFcCards();renderFcStudy();
+/* ── learning tools ──────────────────────────────────────────── */
+const learningUI=window.GodotTokLearningUI.create({
+  data:LEARNING,el,shuffle,readLocal,writeLocal,openExternal,toast,labelButton,reduceMotion
 });
-
-/* fc mode buttons */
-function setFcMode(mode){
-  ['Study','List','Add'].forEach(m=>{
-    const active=m.toLowerCase()===mode;
-    document.getElementById('fcMode'+m).classList.toggle('active',active);
-    document.getElementById('fcMode'+m).setAttribute('aria-selected',String(active));
-    document.getElementById('fc'+m+'View').style.display=active?'flex':'none';
-  });
-}
-document.getElementById('fcModeStudy').addEventListener('click',()=>{setFcMode('study');renderFcStudy()});
-document.getElementById('fcModeList').addEventListener('click',()=>{setFcMode('list');renderFcList()});
-document.getElementById('fcModeAdd').addEventListener('click',()=>setFcMode('add'));
+learningUI.init();
 
 /* ── cheatsheet ──────────────────────────────────────────────── */
 function buildCheatsheet(){
@@ -1067,7 +903,7 @@ function renderSettings(){
 }
 
 /* ── docs ────────────────────────────────────────────────────── */
-let docsFrame=null,currentDoc='https://docs.godotengine.org/en/stable/';
+let docsFrame=null,currentDoc='https://docs.godotengine.org/en/4.7/';
 function loadDoc(url){
   currentDoc=url;
   if(PREVIEW){openExternal(url);return}
@@ -1102,9 +938,9 @@ function initDocs(){
     const p=el('div','pagefall');
     const img=document.createElement('img');img.src='https://cdn.jsdelivr.net/gh/devicons/devicon@latest/icons/godot/godot-original.svg';img.alt='';
     p.appendChild(img);p.appendChild(el('div','ft','embed disabled in preview mode'));p.appendChild(el('div','fs','Open the hosted app without ?preview=1 to use embedded documentation.'));
-    const b=el('button','fb','open godot docs');b.addEventListener('click',()=>openExternal('https://docs.godotengine.org/en/stable/'));p.appendChild(b);host.appendChild(p);
+    const b=el('button','fb','open godot docs');b.addEventListener('click',()=>openExternal('https://docs.godotengine.org/en/4.7/'));p.appendChild(b);host.appendChild(p);
   } else {
-    loadDoc('https://docs.godotengine.org/en/stable/');
+    loadDoc('https://docs.godotengine.org/en/4.7/');
   }
 }
 function initRecipes(){
@@ -1128,8 +964,10 @@ function activateSubtab(group, id){
   if(group==='learn'){
     document.getElementById('sv-gdquest').classList.toggle('active',id==='gdquest');
     document.getElementById('sv-flashcards').classList.toggle('active',id==='flashcards');
+    document.getElementById('sv-quizzes').classList.toggle('active',id==='quizzes');
+    document.getElementById('sv-guides').classList.toggle('active',id==='guides');
     if(id==='gdquest')initLearn();
-    if(id==='flashcards'){loadFcCards();renderFcStudy()}
+    if(id!=='gdquest')learningUI.activate(id);
   }
   if(group==='ref'){
     document.getElementById('sv-docs').classList.toggle('active',id==='docs');
@@ -1258,7 +1096,6 @@ async function setupPwa(){
   renderSettings();
   buildCheatsheet();
   renderSearch('');
-  loadFcCards();
   setupPwa();
   if(PREVIEW){
     const b=el('div','pbanner');
