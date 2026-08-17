@@ -1,10 +1,14 @@
 'use strict';
 
-const CACHE_NAME='godottok-shell-v1';
-const APP_SHELL=['./','./index.html','./manifest.webmanifest','./icon.png','./icon-192.png'];
+const CACHE_NAME='godottok-shell-v2';
+const APP_SHELL=['./','./index.html','./assets/styles.css','./js/app.js','./manifest.webmanifest','./icon.png','./icon-192.png'];
 
 self.addEventListener('install',event=>{
-  event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)).then(()=>self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_SHELL)));
+});
+
+self.addEventListener('message',event=>{
+  if(event.data&&event.data.type==='SKIP_WAITING')self.skipWaiting();
 });
 
 self.addEventListener('activate',event=>{
