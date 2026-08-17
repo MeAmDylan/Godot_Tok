@@ -2,7 +2,7 @@
 
 A TikTok-style video feed for Godot Engine game developers. It combines a vertical tutorial feed with sourced flashcards, quizzes, guides, references, and the GDQuest Learn GDScript app.
 
-Runs as a static Progressive Web App with no backend, account, framework, or build step.
+Runs as a static Progressive Web App with no backend or account. The same web code is packaged for desktop and mobile with Tauri 2.
 
 **Live app:** https://meamdylan.github.io/Godot_Tok/
 
@@ -63,6 +63,10 @@ Runs as a static Progressive Web App with no backend, account, framework, or bui
 - Installable as a PWA with a custom app icon
 - In-app install and update notifications where supported
 - Offline app shell for the cheatsheet, flashcards, and saved local data
+- Tauri desktop packaging for Windows, Linux, Apple Silicon macOS, and Intel macOS
+- Android test APK and iOS Simulator build workflows
+- Signed desktop updater support that remains disabled until repository signing keys are configured
+- Native builds refresh the reviewed automatic video catalogue from the live site and fall back to validated cached or bundled data
 
 ---
 
@@ -73,6 +77,84 @@ Runs as a static Progressive Web App with no backend, account, framework, or bui
 3. Chrome menu → **Add to Home screen**
 
 The app opens in standalone mode. Video playback and external learning sites still require a connection.
+
+---
+
+## Native Apps
+
+GodotTok uses [Tauri 2](https://v2.tauri.app/) to package the existing HTML, CSS, and JavaScript without maintaining a second interface. `scripts/prepare-native.mjs` creates a clean `dist/` directory and a SHA-256 manifest from explicitly allowlisted app assets. Tauri loads that local bundle into the system webview.
+
+Native-only behavior is isolated in `js/native.js` and the small Rust application in `src-tauri/`:
+
+- External links use Tauri's official opener plugin.
+- Desktop update checks use Tauri's signed updater plugin.
+- The automatic YouTube catalogue is fetched from `content/videos.json`, schema-validated, deduplicated against manual videos, and cached locally. A failed or invalid response falls back safely.
+- The browser PWA install and service-worker update prompts are disabled inside the native shell.
+
+### Local desktop development
+
+Install the [official Tauri prerequisites](https://v2.tauri.app/start/prerequisites/) for your operating system, including Node.js and Rust. Then run:
+
+```bash
+npm ci
+npm test
+npm run native:dev
+```
+
+Create a local installer with:
+
+```bash
+npm run native:build
+```
+
+The source configuration is audited by `npm test`. Pull requests also compile the Rust application on Ubuntu in the `Validate native app` workflow.
+
+### Desktop releases and updates
+
+The `Publish native desktop apps` workflow follows Tauri's [official GitHub release pipeline](https://v2.tauri.app/distribute/pipelines/github/). It creates a draft release containing Windows, Linux, Apple Silicon macOS, Intel macOS, and updater artifacts. It refuses to publish unless updater signing is configured.
+
+One-time signing setup:
+
+1. On a trusted local computer, generate an updater key outside this repository by following the [official Tauri updater guide](https://v2.tauri.app/plugin/updater/):
+
+   ```bash
+   npm run tauri signer generate -- -w /a/private/location/godottok.key
+   ```
+
+2. Add the public key text as the GitHub Actions secret `GODOTTOK_UPDATER_PUBLIC_KEY`.
+3. Add the private key content as `TAURI_SIGNING_PRIVATE_KEY`. If it has a password, add that as `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`.
+4. Run `Publish native desktop apps` manually or push a tag matching the app version, such as `app-v0.1.0`.
+5. Download and test every artifact from the draft GitHub release before publishing it.
+
+The updater signature proves update integrity, but it is separate from operating-system trust. The workflow uses macOS ad-hoc signing by default. Public production distribution should also configure an Apple Developer ID certificate and notarization, plus a trusted Windows code-signing certificate, using Tauri's official platform signing guides.
+
+Keep these three version values identical before each release:
+
+- `package.json` `version`
+- `src-tauri/tauri.conf.json` `version`
+- `src-tauri/Cargo.toml` package `version`
+
+### Android and iOS test builds
+
+The `Build native mobile test apps` workflow compiles both platforms on native pull requests. A manual run can build an Android arm64 debug APK, an iOS Simulator debug app, or both. The artifacts are uploaded to that workflow run for testing.
+
+For local mobile work, first complete Tauri's [Android and iOS prerequisites](https://v2.tauri.app/start/prerequisites/#configure-for-mobile-targets), then run:
+
+```bash
+npm ci
+npm run native:android:init
+npm run native:android:dev
+```
+
+On macOS with Xcode and CocoaPods:
+
+```bash
+npm ci
+npm run native:ios:init
+npm run native:ios:dev
+```
+
+Store-ready builds require credentials that are never committed to this repository. Android release distribution needs a private upload key and Google Play account. iOS release distribution needs an Apple Developer account, signing certificate, provisioning profile, and App Store Connect setup. Follow Tauri's official [Android signing](https://v2.tauri.app/distribute/sign/android/) and [iOS distribution](https://v2.tauri.app/distribute/app-store/) guides before submitting.
 
 ---
 
@@ -102,7 +184,7 @@ The `Sync YouTube videos` workflow runs at 04:23 UTC every Tuesday and Friday an
 3. Read canonical title, creator, duration, visibility, and embed status
 4. Apply source-specific Godot keyword rules
 5. Remove duplicates against hand-picked content
-6. Update only the generated `automatic` array in `js/data/videos.js`
+6. Update the generated `automatic` arrays in `js/data/videos.js` and `content/videos.json`
 7. Run the sync unit tests and the complete content audit
 8. Open or update a pull request for human review
 
@@ -138,20 +220,21 @@ Built-in code-bearing items must cite Godot 4.7 documentation, the Godot reposit
 
 ## Validate Content
 
-Run the dependency-free audit before publishing:
+Run the complete audit before publishing:
 
 ```bash
-node scripts/test-sync-youtube.mjs
-node scripts/validate-content.mjs
+npm ci
+npm test
+npm run native:prepare
 ```
 
-The tests cover YouTube duration parsing, filtering, deduplication, generated data, learning counts, Code Library completeness, approved source domains, pinned Godot docs, local assets, unique HTML IDs, and service-worker cache coverage.
+The tests cover YouTube duration parsing, filtering, deduplication, both generated catalogue formats, learning counts, Code Library completeness, approved source domains, pinned Godot docs, local assets, unique HTML IDs, service-worker cache coverage, Tauri configuration, and the deterministic native asset bundle.
 
 ---
 
 ## Self Hosting
 
-The app is static and requires `index.html`, `assets/`, `js/`, `manifest.webmanifest`, `sw.js`, `icon.png`, and `icon-192.png`.
+The web app is static and requires `index.html`, `assets/`, `content/`, `js/`, `manifest.webmanifest`, `sw.js`, `icon.png`, and `icon-192.png`.
 
 **GitHub Pages (what this repo uses):**
 
@@ -192,7 +275,9 @@ python -m http.server 8080
 ## Tech
 
 - Plain HTML + CSS + vanilla JavaScript
-- No framework, no build step, no dependencies
+- No frontend framework or runtime backend
+- Tauri 2.11 native shell with official opener and signed updater plugins
+- Deterministic native frontend preparation with an asset hash manifest
 - Official YouTube Data API v3 for review-gated catalogue updates
 - GitHub Actions schedule plus manual dispatch for the import workflow
 - Official YouTube IFrame Player API for playback, volume, speed, seeking, and scrubber updates
@@ -241,4 +326,4 @@ Pull recent posts from indie Godot devlogs into a read-later list.
 
 ---
 
-*Pull requests are welcome. Keep the application dependency-free and build-step-free.*
+*Pull requests are welcome. Keep the browser application framework-free and preserve the shared web codebase.*

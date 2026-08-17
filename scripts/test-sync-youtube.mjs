@@ -7,6 +7,7 @@ import {
   matchesSource,
   normalizeVideo,
   parseDurationSeconds,
+  renderContentFile,
   renderVideosFile,
   selectAutomaticVideos,
   syncYouTube,
@@ -47,6 +48,7 @@ const selected=selectAutomaticVideos([
 assert.deepEqual(selected.map(item=>item.vid),["newervideo1","oldervideo1"]);
 
 const rendered=renderVideosFile([{id:"tt_1",type:"tt",vid:"1",title:"Manual",creator:"Creator",long:false}],selected);
+assert.deepEqual(JSON.parse(renderContentFile(selected)),{version:1,automatic:selected});
 const context=vm.createContext({window:{}});
 vm.runInContext(rendered,context);
 assert.equal(context.window.GodotTokVideos.manual.length,1);
@@ -58,6 +60,7 @@ const temporary=fs.mkdtempSync(path.join(os.tmpdir(),"godottok-youtube-test-"));
 try{
   const configPath=path.join(temporary,"youtube-sources.json");
   const videosPath=path.join(temporary,"videos.js");
+  const contentPath=path.join(temporary,"content/videos.json");
   fs.writeFileSync(configPath,JSON.stringify({
     version:1,maxAutomaticVideos:2,longformThresholdSeconds:1200,
     sources:[{handle:"@TestChannel",label:"Test Channel",scanLimit:3,keep:2,includeTerms:["godot"],excludeTerms:[]}]
@@ -87,13 +90,18 @@ try{
     return {ok:true,status:200,json:async()=>payload,text:async()=>JSON.stringify(payload)};
   };
 
-  const first=await syncYouTube({apiKey:"test-key",configPath,videosPath,fetchImpl});
+  const first=await syncYouTube({apiKey:"test-key",configPath,videosPath,contentPath,fetchImpl});
   assert.equal(playlistPage,2);
   assert.equal(first.changed,true);
+  assert.equal(first.catalogueChanged,true);
+  assert.equal(first.contentChanged,true);
   assert.deepEqual(first.automatic.map(item=>item.vid),["newervideo1","oldervideo1"]);
+  assert.deepEqual(JSON.parse(fs.readFileSync(contentPath,"utf8")).automatic.map(item=>item.vid),["newervideo1","oldervideo1"]);
   playlistPage=0;
-  const second=await syncYouTube({apiKey:"test-key",configPath,videosPath,fetchImpl});
+  const second=await syncYouTube({apiKey:"test-key",configPath,videosPath,contentPath,fetchImpl});
   assert.equal(second.changed,false);
+  assert.equal(second.catalogueChanged,false);
+  assert.equal(second.contentChanged,false);
 }finally{
   fs.rmSync(temporary,{recursive:true,force:true});
 }

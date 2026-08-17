@@ -15,12 +15,15 @@ vm.runInContext(read("js/data/videos.js"),context,{filename:"js/data/videos.js"}
 const learning=context.window.GodotTokLearning;
 const library=context.window.GodotTokLibrary;
 const videos=context.window.GodotTokVideos;
+const remoteVideos=JSON.parse(read("content/videos.json"));
 assert(learning.flashcards.length===70,"Expected 70 built-in flashcards.");
 assert(learning.quizzes.length===63,"Expected 63 built-in quizzes.");
 assert(learning.guides.length===8,"Expected 8 Christophe resources.");
 assert(library.recipes.length===24,"Expected 24 Code Library recipes.");
 assert(videos.manual.length===24,"Expected 24 hand-picked videos.");
 assert(videos.all.length===videos.manual.length+videos.automatic.length,"Combined video data is incomplete.");
+assert(remoteVideos.version===1&&Array.isArray(remoteVideos.automatic),"Remote video catalogue schema is invalid.");
+assert(JSON.stringify(remoteVideos.automatic)===JSON.stringify(videos.automatic),"Remote and bundled automatic video catalogues differ.");
 
 const videoIds=new Set();
 for(const video of videos.all){
@@ -76,7 +79,7 @@ for(const relative of [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(match
   assert(shell.includes("'./"+relative+"'"),"Service worker does not cache "+relative);
 }
 
-for(const file of ["js/data/videos.js","js/data/learning.js","js/data/library.js","js/app.js"]){
+for(const file of ["js/data/videos.js","js/data/learning.js","js/data/library.js","js/native.js","js/app.js"]){
   assert(!read(file).includes("docs.godotengine.org/en/stable"),file+" contains an unpinned docs link.");
 }
 

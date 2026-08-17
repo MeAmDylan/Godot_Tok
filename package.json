@@ -1,0 +1,25 @@
+{
+  "name": "godottok",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Godot learning feed, study tools, and code library",
+  "license": "MIT",
+  "scripts": {
+    "test": "node scripts/test-sync-youtube.mjs && node scripts/validate-content.mjs && node scripts/check-native.mjs",
+    "validate": "node scripts/validate-content.mjs",
+    "native:prepare": "node scripts/prepare-native.mjs",
+    "native:check": "node scripts/check-native.mjs",
+    "native:dev": "npm run native:prepare && tauri dev",
+    "native:build": "tauri build",
+    "native:android:init": "tauri android init",
+    "native:android:dev": "tauri android dev",
+    "native:android:build": "tauri android build",
+    "native:ios:init": "tauri ios init",
+    "native:ios:dev": "tauri ios dev",
+    "native:ios:build": "tauri ios build",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "2.11.4"
+  }
+}

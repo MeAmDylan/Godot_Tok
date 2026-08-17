@@ -1,0 +1,57 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "GodotTok",
+  "version": "0.1.0",
+  "identifier": "io.github.meamdylan.godottok",
+  "build": {
+    "beforeBuildCommand": "node scripts/prepare-native.mjs",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "withGlobalTauri": true,
+    "windows": [
+      {
+        "label": "main",
+        "title": "GodotTok",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 360,
+        "minHeight": 640,
+        "center": true,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' customprotocol: asset:; script-src 'self' https://www.youtube.com https://s.ytimg.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://i.ytimg.com; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://www.tiktok.com https://gdquest.github.io https://docs.godotengine.org https://kidscancode.org; connect-src 'self' https://www.youtube.com https://www.googleapis.com https://meamdylan.github.io; media-src 'self' blob: https://*.googlevideo.com; font-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "createUpdaterArtifacts": false,
+    "category": "Education",
+    "shortDescription": "Learn Godot with videos, study tools, and complete code recipes.",
+    "longDescription": "GodotTok combines a focused tutorial feed with flashcards, quizzes, references, and a complete Godot 4.7 code library.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "android": {
+      "minSdkVersion": 24
+    },
+    "iOS": {
+      "minimumSystemVersion": "14.0"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://github.com/MeAmDylan/Godot_Tok/releases/latest/download/latest.json"
+      ]
+    }
+  }
+}

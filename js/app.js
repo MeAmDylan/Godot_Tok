@@ -1,7 +1,7 @@
 'use strict';
 const PREVIEW = new URLSearchParams(window.location.search).get('preview')==='1';
 const VIDEO_DATA=window.GodotTokVideos;
-const SEED_VIDEOS=VIDEO_DATA.all;
+let seedVideos=[...VIDEO_DATA.all];
 
 const LEARNING=window.GodotTokLearning;
 const LEARNING_CATEGORIES=LEARNING.categories;
@@ -62,7 +62,10 @@ function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=
 function svgUse(id){const s=document.createElementNS('http://www.w3.org/2000/svg','svg');s.innerHTML='<use href="#'+id+'"/>';return s}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(t._t);t._t=setTimeout(()=>t.classList.remove('show'),2200)}
 function labelButton(button,label){button.type='button';button.setAttribute('aria-label',label);button.title=label;return button}
-function openExternal(url){const win=window.open(url,'_blank','noopener,noreferrer');if(win)win.opener=null}
+function openExternal(url){
+  if(window.GodotTokNative?.openExternal(url))return;
+  const win=window.open(url,'_blank','noopener,noreferrer');if(win)win.opener=null;
+}
 function updateMuteButtons(){
   document.querySelectorAll('.mutebtn').forEach(button=>{
     button.innerHTML='';button.appendChild(svgUse(muted?'ic-vol-off':'ic-vol-on'));
@@ -532,7 +535,7 @@ function buildTipCard(tip,n){
 
 /* ── build shuffled feed ─────────────────────────────────────── */
 function buildShuffledFeed(){
-  const vids=shuffle([...userVideos,...SEED_VIDEOS]);
+  const vids=shuffle([...userVideos,...seedVideos]);
   const tips=shuffle([...TIPS]);
   shuffledFeed=[];let ti=0;
   vids.forEach((v,i)=>{
@@ -782,7 +785,7 @@ document.getElementById('addBtn').addEventListener('click',async()=>{
   msg.className='';
   if(!p){msg.className='err';msg.textContent='could not parse that url';return}
   if(p.type==='tt_short'){msg.className='err';msg.textContent='shortened tiktok link — open it in a browser and copy the full url';return}
-  if([...userVideos,...SEED_VIDEOS].some(video=>video.type===p.type&&video.vid===p.vid)){msg.className='err';msg.textContent='that video is already in the feed';return}
+  if([...userVideos,...seedVideos].some(video=>video.type===p.type&&video.vid===p.vid)){msg.className='err';msg.textContent='that video is already in the feed';return}
   const title=document.getElementById('addTitle').value.trim()||(p.type==='yt'?'YouTube video':'TikTok video');
   const v={id:p.type+'_'+p.vid+'_'+Date.now(),type:p.type,vid:p.vid,handle:p.handle||null,url:p.url||null,title,creator:document.getElementById('addCreator').value.trim(),long:document.getElementById('addLong').checked,user:true};
   userVideos.unshift(v);if(!await store.set('gt_uv',userVideos)){userVideos.shift();msg.className='err';msg.textContent='storage is unavailable on this device';return}
@@ -1046,7 +1049,7 @@ libraryUI=window.GodotTokLibraryUI.create({
 });
 searchUI=window.GodotTokSearch.create({
   learningData:LEARNING,libraryData:LIBRARY,
-  getVideos:()=>[...userVideos,...SEED_VIDEOS],
+  getVideos:()=>[...userVideos,...seedVideos],
   el,openModal,openExternal,openLearningItem,openLibraryRecipe,openReference,openDoc:openDocInApp
 });
 window.addEventListener('hashchange',applyRoute);
@@ -1084,6 +1087,7 @@ let installPrompt=null,swRegistration=null,reloadingForUpdate=false;
 const installButton=document.getElementById('installApp');
 const updateButton=document.getElementById('updateApp');
 window.addEventListener('beforeinstallprompt',event=>{
+  if(window.GodotTokNative?.isNative)return;
   event.preventDefault();installPrompt=event;installButton.hidden=false;
 });
 window.addEventListener('appinstalled',()=>{installPrompt=null;installButton.hidden=true;toast('app installed')});
@@ -1102,6 +1106,7 @@ updateButton.addEventListener('click',()=>{
   if(waiting){updateButton.disabled=true;waiting.postMessage({type:'SKIP_WAITING'})}
 });
 async function setupPwa(){
+  if(window.GodotTokNative?.isNative)return;
   if(!('serviceWorker' in navigator)||!window.location.protocol.startsWith('http'))return;
   try{
     const registration=await navigator.serviceWorker.register('./sw.js');
@@ -1121,6 +1126,7 @@ async function setupPwa(){
 
 /* ── init ────────────────────────────────────────────────────── */
 (async function init(){
+  seedVideos=await window.GodotTokNative.loadVideos(VIDEO_DATA);
   const storedVideos=await store.get('gt_uv');userVideos=Array.isArray(storedVideos)?storedVideos.filter(v=>v&&v.id&&v.type&&v.vid):[];
   const sv=await store.get('gt_saved');if(sv&&typeof sv==='object'){savedIds=Array.isArray(sv.ids)?sv.ids:[];savedItems=sv.items&&typeof sv.items==='object'?sv.items:{}}
   const storedLongform=await store.get('gt_lf');longformOn=typeof storedLongform==='boolean'?storedLongform:false;
@@ -1148,6 +1154,7 @@ async function setupPwa(){
   if(!window.location.hash)setRoute('feed',true);
   applyRoute();
   setupPwa();
+  window.GodotTokNative.setupUpdater(document.getElementById('nativeUpdate'),toast);
   if(PREVIEW){
     const b=el('div','pbanner');
     const tx=el('span');tx.innerHTML='<b>preview mode:</b> external video and learning embeds are disabled. Remove <code>?preview=1</code> to load them.';
