@@ -1,6 +1,6 @@
 # GodotTok
 
-A TikTok-style video feed for Godot Engine game developers. It combines a vertical feed of Godot and GDScript tutorials with a built-in GDScript cheatsheet, flashcards, official documentation, KidsCanCode recipes, and the GDQuest Learn GDScript app.
+A TikTok-style video feed for Godot Engine game developers. It combines a vertical tutorial feed with sourced flashcards, quizzes, guides, references, and the GDQuest Learn GDScript app.
 
 Runs as a static Progressive Web App with no backend, account, framework, or build step.
 
@@ -33,10 +33,11 @@ Runs as a static Progressive Web App with no backend, account, framework, or bui
 
 **Learn**
 - GDQuest Learn GDScript From Zero app embedded
-- Flashcard deck with 25 built in GDScript / Godot cards
-- Study mode with flip animation and spaced review scheduling
-- Skipped cards return during the current session; learned cards return when due
-- Add custom flashcards via the in-app form or directly in the HTML
+- 70 Godot 4.7 flashcards across seven categories and three difficulty levels
+- Four-rating spaced review with filters, progress, and stable item IDs
+- 63 sourced quiz questions with explanations, missed-question review, and mastery tracking
+- Christophe's interactive guides and cheatsheet catalogue
+- Custom flashcards with category, topic, and difficulty fields
 
 **Reference**
 - Godot official documentation embedded with quick-nav chips
@@ -88,16 +89,16 @@ The app opens in standalone mode. Video playback and external learning sites sti
 
 **In the app:** Learn tab → Flashcards → Add Card.
 
-**In the HTML file:** search for `ADD CUSTOM FLASHCARDS HERE` near the top of the script section:
+**In the source:** built-in content is stored in `js/data/learning.js` and validated when loaded:
 
 ```js
-const MY_CARDS = [
-  {q:'Your question here', a:'Your answer here'},
-  {q:'What node for physics movement?', a:'CharacterBody2D', code:'move_and_slide()'},
+const flashcards = [
+  // Each item includes a stable ID, category, topic, difficulty,
+  // Godot version, and an approved source URL.
 ];
 ```
 
-Add a `code` field to show a code block on the back of the card.
+Built-in code-bearing items must cite Godot 4.7 documentation, the Godot repository, or GDQuest.
 
 ---
 
