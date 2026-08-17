@@ -10,16 +10,24 @@ const context=vm.createContext({window:{},URL});
 
 vm.runInContext(read("js/data/learning.js"),context,{filename:"js/data/learning.js"});
 vm.runInContext(read("js/data/library.js"),context,{filename:"js/data/library.js"});
+for(const relative of ["js/data/library-expansion.js","js/data/library-expansion-2d.js","js/data/library-expansion-3d.js","js/data/library-bundles.js"]){
+  vm.runInContext(read(relative),context,{filename:relative});
+}
 vm.runInContext(read("js/data/videos.js"),context,{filename:"js/data/videos.js"});
 
 const learning=context.window.GodotTokLearning;
-const library=context.window.GodotTokLibrary;
+const baseLibrary=context.window.GodotTokLibrary;
+const expansion=context.window.GodotTokLibraryExpansion;
+const library={...baseLibrary,version:expansion.version,recipes:[...baseLibrary.recipes,...expansion.recipes],bundles:expansion.bundles};
 const videos=context.window.GodotTokVideos;
 const remoteVideos=JSON.parse(read("content/videos.json"));
 assert(learning.flashcards.length===70,"Expected 70 built-in flashcards.");
 assert(learning.quizzes.length===63,"Expected 63 built-in quizzes.");
 assert(learning.guides.length===8,"Expected 8 Christophe resources.");
-assert(library.recipes.length===24,"Expected 24 Code Library recipes.");
+assert(baseLibrary.recipes.length===24,"Expected the 24 original Code Library recipes.");
+assert(expansion.recipes.length===47,"Expected 47 expanded Code Library recipes.");
+assert(library.recipes.length===71,"Expected 71 total Code Library recipes.");
+assert(library.bundles.length===18,"Expected 18 recommended game bundles.");
 assert(videos.manual.length===24,"Expected 24 hand-picked videos.");
 assert(videos.all.length===videos.manual.length+videos.automatic.length,"Combined video data is incomplete.");
 assert(remoteVideos.version===1&&Array.isArray(remoteVideos.automatic),"Remote video catalogue schema is invalid.");
@@ -42,14 +50,15 @@ for(const video of videos.all){
   }
 }
 
-for(const section of library.sections){
-  assert(library.recipes.filter(recipe=>recipe.section===section.id).length===8,section.id+" must have 8 recipes.");
-}
+for(const section of library.sections)assert(library.recipes.some(recipe=>recipe.section===section.id),section.id+" has no recipes.");
 
 const recipeIds=new Set(library.recipes.map(recipe=>recipe.id));
 for(const recipe of library.recipes){
   assert(recipe.files.length>0,recipe.id+" has no complete files.");
   assert(recipe.files.every(file=>file.path&&file.code.includes("extends ")),recipe.id+" has an incomplete script.");
+  const filePaths=recipe.files.map(file=>file.path);
+  assert(filePaths.length===new Set(filePaths).size,recipe.id+" contains duplicate file paths.");
+  assert(filePaths.every(filePath=>!path.isAbsolute(filePath)&&!filePath.split(/[\\/]+/).includes("..")),recipe.id+" contains an unsafe file path.");
   assert(recipe.steps.length>=4,recipe.id+" has too few implementation steps.");
   assert(recipe.tests.length>=4,recipe.id+" has too few tests.");
   assert(recipe.sources.every(item=>{
@@ -59,6 +68,34 @@ for(const recipe of library.recipes){
     return url.hostname==="gdquest.com"||url.hostname==="www.gdquest.com";
   }),recipe.id+" has an unapproved or unpinned source.");
   assert(recipe.related.every(id=>recipeIds.has(id)),recipe.id+" links to an unknown recipe.");
+}
+
+for(const recipe of expansion.recipes){
+  assert(recipe.version==="4.7.1",recipe.id+" is not pinned to Godot 4.7.1.");
+  assert(recipe.nodeTree.length>0,recipe.id+" has no scene tree.");
+  assert(recipe.inspector.length>=3,recipe.id+" has incomplete Inspector setup.");
+  assert(recipe.files.every(file=>file.attachTo&&file.purpose),recipe.id+" is missing file attachment guidance.");
+  assert(recipe.signals.every(signal=>["from","signal","to","method","why"].every(field=>typeof signal[field]==="string"&&signal[field].trim())),recipe.id+" has incomplete signal wiring guidance.");
+  const code=recipe.files.map(file=>file.code).join("\n");
+  assert(!/(^|\n)\s*(export|onready)\s+var\b/.test(code),recipe.id+" uses Godot 3 property syntax.");
+  assert(!/\.instance\s*\(|\byield\s*\(/.test(code),recipe.id+" uses a removed Godot 3 API.");
+  assert(!/\bTileMap\b/.test(code),recipe.id+" uses deprecated TileMap instead of TileMapLayer.");
+}
+
+const bundleIds=new Set();
+for(const bundle of library.bundles){
+  assert(!bundleIds.has(bundle.id),"Duplicate bundle ID: "+bundle.id);
+  bundleIds.add(bundle.id);
+  assert(bundle.recipeIds.length>=6,bundle.id+" has too few required systems.");
+  assert(bundle.recipeIds.length===new Set(bundle.recipeIds).size,bundle.id+" repeats a required system.");
+  assert(bundle.recipeIds.every(id=>recipeIds.has(id)),bundle.id+" links to an unknown recipe.");
+  assert(bundle.milestones.length>=5,bundle.id+" needs five assembly milestones.");
+  assert(bundle.milestones.every(item=>item.steps.length>=3&&item.exitTest),bundle.id+" has an incomplete milestone.");
+  assert(bundle.artAssets.length>=6,bundle.id+" has an incomplete art minimum.");
+  assert(bundle.sfx.length>=6,bundle.id+" has an incomplete audio minimum.");
+  assert(bundle.signals.length>=5,bundle.id+" has an incomplete integration map.");
+  assert(bundle.definitionOfDone.length>=5,bundle.id+" has an incomplete acceptance audit.");
+  assert(bundle.research.length>=1&&bundle.research.every(item=>new URL(item.url).protocol==="https:"),bundle.id+" has invalid research links.");
 }
 
 const html=read("index.html");
@@ -79,8 +116,8 @@ for(const relative of [...html.matchAll(/<script[^>]+src="([^"]+)"/g)].map(match
   assert(shell.includes("'./"+relative+"'"),"Service worker does not cache "+relative);
 }
 
-for(const file of ["js/data/videos.js","js/data/learning.js","js/data/library.js","js/native.js","js/app.js"]){
+for(const file of ["js/data/videos.js","js/data/learning.js","js/data/library.js","js/data/library-expansion.js","js/data/library-expansion-2d.js","js/data/library-expansion-3d.js","js/data/library-bundles.js","js/native.js","js/app.js"]){
   assert(!read(file).includes("docs.godotengine.org/en/stable"),file+" contains an unpinned docs link.");
 }
 
-console.log(`Validated ${videos.all.length} videos, 70 flashcards, 63 quizzes, 8 guides, and 24 complete Code Library recipes.`);
+console.log(`Validated ${videos.all.length} videos, 70 flashcards, 63 quizzes, 8 guides, 71 Code Library recipes, and 18 game bundles.`);
